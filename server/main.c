@@ -20,25 +20,22 @@ void set_conio_terminal_mode(struct termios *orig_termios) {
 }
 
 void save_screen() {
-    // Save the current screen state
-    printf("\033[?47h");  // Save the screen buffer
-    fflush(stdout);
+    // Save the current screen state using tput
+    system("tput smcup");  // Save the screen buffer
 }
 
 void restore_screen() {
-    // Restore the previously saved screen state
-    printf("\033[?47l");  // Restore the screen buffer
-    fflush(stdout);
+    // Restore the previously saved screen state using tput
+    system("tput rmcup");  // Restore the screen buffer
 }
 
 void clear_screen() {
-    // ANSI escape sequence to clear the terminal screen
-    printf("\033[H\033[J");
-    fflush(stdout);
+    // Clear the terminal screen using tput
+    system("tput clear");
 }
 
 void move_cursor(int row, int col) {
-    // ANSI escape sequence to move the cursor to a specific position
+    // Move the cursor to a specific position using tput
     printf("\033[%d;%dH", row, col);
     fflush(stdout);
 }
@@ -69,13 +66,21 @@ void print_instructions(int start_row, int start_col) {
     fflush(stdout);
 }
 
-
 // Function to draw a vertical split
 void draw_split(int cols) {
     for (int i = 1; i <= cols; ++i) {
         printf("\033[%d;%dH│", i, GRID_SIZE * 2 + 1); // Draw vertical line
     }
 }
+
+/* TODO make moving cursor with tput
+void move_cursor(int row, int col) {
+    // Move the cursor to a specific position using tput
+    char command[100];
+    snprintf(command, sizeof(command), "tput cup %d %d", row - 1, col - 1);  // Adjust for 0-based indexing
+    system(command);
+}
+*/
 
 int main() {
     struct termios orig_termios;
@@ -86,7 +91,7 @@ int main() {
 
     // Clear the terminal screen
     clear_screen();
-    printf("\033[?25l"); // make cursor invisible
+    system("tput civis"); // make cursor invisible
 
     // Initialize the grid with # symbols
     char grid[GRID_SIZE][GRID_SIZE];
@@ -126,7 +131,7 @@ int main() {
         }
     }
 
-    printf("\033[?25h"); // make cursor visible
+    system("tput cnorm"); // make cursor visible
 
     // Restore the previous terminal screen content
     restore_screen();
