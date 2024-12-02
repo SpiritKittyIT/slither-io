@@ -3,23 +3,12 @@
 
 #include "map.h"
 
-const char* ansi_code[] = {
-	"\r",
-	"\n",
-	"\033[A",
-	"\033[B",
-	"\033[C",
-	"\033[D",
-	"\033[2J",
-	"\033[H",
-};
-
 const char* field_symbol[] = {
 	"⌗", //⌗⏹
 	" ",
 	"•", //•⏺
 	"፠",
-	"፨" 
+	"፨",
 };
 
 Map *map_init(int size, int max_snakes) {
@@ -65,19 +54,4 @@ Field map_getfield(Map *map, int x, int y) {
   }
   
   return map->fields[x][y];
-}
-
-void map_dispview(Map *map, int view_size, int head_x, int head_y) {
-  int tlx = head_x - view_size / 2;
-  int tly = head_y - view_size / 2;
-
-  printf(ansi_code[ANSI_CURTL]);
-  for (int x = tlx; x < tlx + view_size; x++)
-  {
-    for (int y = tly; y < tly + view_size; y++)
-    {
-      printf(field_symbol[map_getfield(map, x, y)]);
-    }
-    printf(ansi_code[ANSI_NEWLN]);
-  }
 }
