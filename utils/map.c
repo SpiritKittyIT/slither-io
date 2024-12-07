@@ -1,15 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "map.h"
-
-const char* field_symbol[] = {
-	"⌗", //⌗⏹
-	" ",
-	"•", //•⏺
-	"፠",
-	"፨",
-};
 
 Map *map_init(int size, int max_snakes) {
   Map *result = calloc(1, sizeof(Map));
@@ -48,10 +41,20 @@ void map_destroy(Map *map) {
   free(map);
 }
 
-Field map_getfield(Map *map, int x, int y) {
-  if (x < 0 || x >= map->size || y < 0 || y >= map->size) {
+Field map_getfield(Map *map, Coordinate coord) {
+  if (coord.x < 0 || coord.x >= map->size || coord.y < 0 || coord.y >= map->size) {
     return FIELD_NONE;
   }
   
-  return map->fields[x][y];
+  return map->fields[coord.x][coord.y];
+}
+
+bool map_setfield(Map *map, Coordinate coord, Field field) {
+  if (coord.x < 0 || coord.x >= map->size || coord.y < 0 || coord.y >= map->size) {
+    return false;
+  }
+
+  map->fields[coord.x][coord.y] = field;
+  
+  return true;
 }

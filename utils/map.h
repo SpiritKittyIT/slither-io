@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 typedef enum {
 	FIELD_WALL,
 	FIELD_NONE,
@@ -8,10 +10,20 @@ typedef enum {
 	FIELD_BODY,
 } Field;
 
-extern const char *field_symbol[];
+const char *field_symbol[] = {
+	[FIELD_WALL] = "⌗", //⌗⏹
+	[FIELD_NONE] = " ",
+	[FIELD_FOOD] = "•", //•⏺
+	[FIELD_HEAD] = "፠",
+	[FIELD_BODY] = "፨",
+};
 
-typedef struct Map
-{
+typedef struct {
+  int x;
+  int y;
+} Coordinate;
+
+typedef struct {
 	int size;
 	int max_snakes;
 	int snakes;
@@ -20,4 +32,5 @@ typedef struct Map
 
 Map *map_init(int size, int max_snakes);
 void map_destroy(Map *map);
-Field map_getfield(Map *map, int x, int y);
+Field map_getfield(Map *map, Coordinate coord);
+bool map_setfield(Map *map, Coordinate coord, Field field);
