@@ -4,6 +4,14 @@
 
 #include "map.h"
 
+const char *field_symbol[] = {
+	[FIELD_WALL] = "⌗", //⌗⏹
+	[FIELD_NONE] = " ",
+	[FIELD_FOOD] = "•", //•⏺
+	[FIELD_HEAD] = "፠",
+	[FIELD_BODY] = "፨",
+};
+
 Map *map_init(int size, int max_snakes) {
   Map *result = calloc(1, sizeof(Map));
 

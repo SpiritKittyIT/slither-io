@@ -10,13 +10,7 @@ typedef enum {
 	FIELD_BODY,
 } Field;
 
-const char *field_symbol[] = {
-	[FIELD_WALL] = "⌗", //⌗⏹
-	[FIELD_NONE] = " ",
-	[FIELD_FOOD] = "•", //•⏺
-	[FIELD_HEAD] = "፠",
-	[FIELD_BODY] = "፨",
-};
+extern const char *field_symbol[];
 
 typedef struct {
   int x;

@@ -8,3 +8,4 @@ void hide_cursor();
 void show_cursor();
 void init_game_screen(struct termios *orig_termios);
 void undo_game_screen(struct termios *orig_termios);
+

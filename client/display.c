@@ -64,13 +64,13 @@ void map_dispview(Map *map, int view_size, Coordinate coord) {
   fflush(stdout);
 }
 
-static bool is_in_view(Coordinate head, int view_size, Coordinate coord) {
+/*static bool is_in_view(Coordinate head, int view_size, Coordinate coord) {
   int tlx = head.x - view_size / 2;
   int tly = head.y - view_size / 2;
 
   return coord.x >= tlx && coord.x <= tlx + view_size
       && coord.y >= tly && coord.y <= tly + view_size;
-}
+}*/
 
 void display_snake(Snake *snake, int view_size) {
   BodyPart *body_part = snake->head;

@@ -9,16 +9,11 @@ typedef enum {
 	DIR_RIGHT,
 } Direction;
 
-const Coordinate direction_coord[] = {
-    [DIR_UP] = {0, 1},
-    [DIR_DOWN] = {0, -1},
-    [DIR_LEFT] = {-1, 0},
-    [DIR_RIGHT] = {1, 0},
-};
+extern const Coordinate direction_coord[];
 
 Coordinate coord_sum(Coordinate summand1, Coordinate summand2);
 
-typedef struct {
+typedef struct BodyPart {
   Field field;
   Coordinate coord;
   struct BodyPart *next;

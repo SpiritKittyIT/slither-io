@@ -1,9 +1,15 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "sll.h"
 #include "map.h"
 #include "snake.h"
+
+const Coordinate direction_coord[] = {
+    [DIR_UP] = {0, 1},
+    [DIR_DOWN] = {0, -1},
+    [DIR_LEFT] = {-1, 0},
+    [DIR_RIGHT] = {1, 0},
+};
 
 static BodyPart *snake_create_bodypart(Coordinate coord, Field field) {
   BodyPart *body_part = calloc(1, sizeof(BodyPart));
@@ -26,7 +32,7 @@ Coordinate coord_sum(Coordinate summand1, Coordinate summand2) {
 }
 
 Snake *snake_init(Coordinate coord, Direction dir) {
-  Snake *snake = calloc(1, sizeof(snake));
+  Snake *snake = calloc(1, sizeof(Snake));
 
   snake->head = snake_create_bodypart(coord, FIELD_HEAD);
   snake->tail = snake->head;
