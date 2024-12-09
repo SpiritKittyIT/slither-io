@@ -1,49 +1,46 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
-#include "../utils/sll.h"
+#include "../utils/srvlist.h"
+#include "../utils/socket.h"
 
 int main() {
-	Sll *sll = sll_init(sizeof(int));
+	int port = -1;
+	int sockfd = -1;
 
-	for (int i = 0; i < 10; ++i)
-	{
-		sll_add(sll, &i);
+	if (!bind_socket(&sockfd, &port)) {
+		printf("Failed to bind to any available port\n");
+		return 1;
 	}
-	
-	printf("%d\n", sll->size);
-	SllNode *node = sll->head;
-	
-	for (int i = 0; i < sll->size; ++i)
-	{
-		printf("%d", *(int *)node->data);
-		node = node->next;
-		if (node != NULL) {
-			printf(" -> ");
-		}
+
+	printf("Bound to port %d\n", port);
+
+	pid_t pid = getpid();
+	printf("Server process id: %d\n", pid);
+
+	Server server_info;
+	server_info.pid = pid;
+	server_info.port = port;
+
+	if (!add_server_to_shared_memory(server_info)) {
+		printf("Failed to add server to shared memory\n");
 	}
-	printf("\n");
 
-	int data = 10;
-	sll_set(sll, 3, &data);
-	++data;
-	sll_insert(sll, 0, &data);
+	// code
 
-	node = sll->head;
-	for (int i = 0; i < sll->size; ++i)
-	{
-		printf("%d", *(int *)node->data);
-		node = node->next;
-		if (node != NULL) {
-			printf(" -> ");
-		}
+	sleep(10);
+
+	if (!read_and_print_shared_memory()) {
+		fprintf(stderr, "Failed to read shared memory.\n");
 	}
-	printf("\n");
-	
-	printf("%d\n", sll->size);
 
-	sll_destroy(sll);
+	// cleanup
+	if (remove_server_from_shared_memory(server_info)) {
+		printf("Server entry successfully removed.\n");
+	} else {
+		fprintf(stderr, "Failed to remove server entry.\n");
+	}
+
+	unbind_socket(&sockfd);
 
 	return 0;
 }

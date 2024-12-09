@@ -1,0 +1,241 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <semaphore.h>
+#include <stdbool.h>
+#include <sys/types.h>
+
+#include "srvlist.h"
+
+static sem_t *initialize_semaphore(const char *sem_name) {
+  sem_t *sem = sem_open(sem_name, O_CREAT, 0666, 1);
+  if (sem == SEM_FAILED) {
+    perror("sem_open");
+  }
+  return sem;
+}
+
+static bool initialize_shared_memory(int *shm_fd, ServerList **server_list, bool *initialized) {
+  struct stat shm_stat;
+
+  // Create or open shared memory
+  *shm_fd = shm_open(SHM_FILE, O_CREAT | O_RDWR, 0666);
+  if (*shm_fd == -1) {
+    perror("shm_open");
+    return false;
+  }
+
+  // Check the shared memory size
+  if (fstat(*shm_fd, &shm_stat) == -1) {
+    perror("fstat");
+    close(*shm_fd);
+    return false;
+  }
+
+  // Resize if newly created
+  *initialized = (shm_stat.st_size == 0);
+  if (*initialized && ftruncate(*shm_fd, sizeof(ServerList)) == -1) {
+    perror("ftruncate");
+    close(*shm_fd);
+    return false;
+  }
+
+  // Map the shared memory
+  *server_list = mmap(NULL, sizeof(ServerList), PROT_READ | PROT_WRITE, MAP_SHARED, *shm_fd, 0);
+  if (*server_list == MAP_FAILED) {
+    perror("mmap");
+    close(*shm_fd);
+    return false;
+  }
+
+  // Initialize the memory if it is newly created
+  if (*initialized) {
+    memset(*server_list, 0, sizeof(ServerList));
+  }
+
+  return true;
+}
+
+static bool add_server_entry(ServerList *server_list, Server server) {
+  if (server_list->active_count >= MAX_SERVER_COUNT) {
+    fprintf(stderr, "Error: Server list is full.\n");
+    return false;
+  }
+
+  server_list->servers[server_list->active_count] = server;
+  server_list->active_count++;
+  printf("Server added: PID = %d, Port = %d\n", server.pid, server.port);
+  return true;
+}
+
+static bool remove_server_entry(ServerList *server_list, Server server) {
+  bool found = false;
+
+  for (int i = 0; i < server_list->active_count; ++i) {
+    if (server_list->servers[i].pid == server.pid) {
+      server_list->servers[i] = server_list->servers[server_list->active_count - 1];
+      memset(&server_list->servers[server_list->active_count - 1], 0, sizeof(Server));
+      --server_list->active_count;
+      found = true;
+
+      break;
+    }
+  }
+
+  if (found) {
+    printf("Server removed: PID = %d, Port = %d\n", server.pid, server.port);
+  }
+  else {
+    printf("Server not found: PID = %d, Port = %d\n", server.pid, server.port);
+  }
+  return found;
+}
+
+bool add_server_to_shared_memory(Server new_server) {
+  int shm_fd;
+  ServerList *server_list;
+  sem_t *sem;
+  bool initialized;
+
+  // Initialize semaphore
+  sem = initialize_semaphore(SEM_FILE);
+  if (!sem) {
+    return false;
+  }
+
+  // Acquire semaphore
+  if (sem_wait(sem) == -1) {
+    perror("sem_wait");
+    sem_close(sem);
+    sem_unlink(SEM_FILE);
+    return false;
+  }
+
+  // Initialize shared memory
+  if (!initialize_shared_memory(&shm_fd, &server_list, &initialized)) {
+    sem_post(sem);
+    sem_close(sem);
+    return false;
+  }
+
+  // Add the server entry
+  bool result = add_server_entry(server_list, new_server);
+
+  // Release semaphore
+  if (sem_post(sem) == -1) {
+    perror("sem_post");
+  }
+
+  // Cleanup
+  munmap(server_list, sizeof(ServerList));
+  close(shm_fd);
+  sem_close(sem);
+
+  return result;
+}
+
+bool remove_server_from_shared_memory(Server new_server) {
+  int shm_fd;
+  ServerList *server_list;
+  sem_t *sem;
+  bool initialized;
+
+  // Initialize semaphore
+  sem = initialize_semaphore(SEM_FILE);
+  if (!sem) {
+    return false;
+  }
+
+  // Acquire semaphore
+  if (sem_wait(sem) == -1) {
+    perror("sem_wait");
+    sem_close(sem);
+    sem_unlink(SEM_FILE);
+    return false;
+  }
+
+  // Initialize shared memory
+  if (!initialize_shared_memory(&shm_fd, &server_list, &initialized)) {
+    sem_post(sem);
+    sem_close(sem);
+    return false;
+  }
+
+  // Add the server entry
+  bool result = remove_server_entry(server_list, new_server);
+
+  // Release semaphore
+  if (sem_post(sem) == -1) {
+    perror("sem_post");
+  }
+
+  // Cleanup
+  munmap(server_list, sizeof(ServerList));
+  close(shm_fd);
+  sem_close(sem);
+
+  return result;
+}
+
+static int server_pid_compare(const void *a, const void *b) {
+  const Server *server_a = a;
+  const Server *server_b = b;
+  return server_a->pid - server_b->pid;
+}
+
+ServerList *get_active_server_list() {
+  int shm_fd;
+  ServerList *server_list;
+  ServerList *result;
+
+  // Open the shared memory object
+  shm_fd = shm_open(SHM_FILE, O_RDONLY, 0666);
+  if (shm_fd == -1) {
+    perror("shm_open");
+    return false;
+  }
+
+  // Map the shared memory object into the address space
+  server_list = mmap(NULL, sizeof(ServerList), PROT_READ, MAP_SHARED, shm_fd, 0);
+  if (server_list == MAP_FAILED) {
+    perror("mmap");
+    close(shm_fd);
+    return false;
+  }
+
+  // Copy the contents of the shared memory
+  result = malloc(sizeof(ServerList));
+  memcpy(result, server_list, sizeof(ServerList));
+
+  // Sort the servers by PID
+  qsort(result->servers, result->active_count, sizeof(Server), server_pid_compare);
+
+  // Cleanup
+  munmap(server_list, sizeof(ServerList));
+  close(shm_fd);
+
+  return result;
+}
+
+void srvlist_destroy(ServerList *server_list) {
+  free(server_list);
+}
+
+bool read_and_print_shared_memory() {
+  ServerList *server_list = get_active_server_list();
+
+  // Print the contents of the shared memory
+  printf("Active servers: %d\n", server_list->active_count);
+  for (int i = 0; i < server_list->active_count; i++) {
+    printf("Server %d: PID = %d, Port = %d\n", i + 1, server_list->servers[i].pid, server_list->servers[i].port);
+  }
+
+  // Cleanup
+  srvlist_destroy(server_list);
+
+  return true;
+}
