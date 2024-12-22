@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 
 #include "socket.h"
+#include "map.h"
 
 bool bind_socket(int *sockfd, int *port) {
   *port = 49152;
@@ -41,4 +42,29 @@ void unbind_socket(int *sockfd) {
 	}
 
   *sockfd = -1;
+}
+
+bool send_message(int sockfd, Message *message) {
+	if (send(sockfd, message, sizeof(Message), 0) < 0) {
+		perror("send");
+		return false;
+	}
+
+	return true;
+}
+
+bool receive_message(int sockfd, Message *message) {
+	ssize_t bytes_received = recv(sockfd, message, sizeof(Message), 0);
+	if (bytes_received < 0) {
+		perror("recv");
+		return false;
+	} else if (bytes_received == 0) {
+		printf("Client disconnected.\n");
+		return false;
+	} else if (bytes_received != sizeof(Message)) {
+		fprintf(stderr, "Incomplete message received.\n");
+		return false;
+	}
+
+	return true;
 }

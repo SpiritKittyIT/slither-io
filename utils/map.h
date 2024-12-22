@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 
+#define OBSTACLE_PERCENT 20
+
 typedef enum {
 	FIELD_WALL,
 	FIELD_NONE,
@@ -21,10 +23,12 @@ typedef struct {
 	int size;
 	int max_snakes;
 	int snakes;
-	Field **fields;
+	Field fields[];
 } Map;
 
-Map *map_init(int size, int max_snakes);
+Map *map_new(int size, int max_snakes, bool with_obstacles, const char *from_file);
 void map_destroy(Map *map);
 Field map_getfield(Map *map, Coordinate coord);
 bool map_setfield(Map *map, Coordinate coord, Field field);
+bool add_food(Map *map);
+void map_print(Map *map);
