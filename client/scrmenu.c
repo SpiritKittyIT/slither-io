@@ -32,10 +32,10 @@ Screen open_scrmenu(const bool paused) {
   int selected = paused ? 0 : 1;
   const int optcount = 4;
 
-  display_scrmenu(selected, paused);
-
 	char c;
   while (screen == SCR_MENU) {
+    display_scrmenu(selected, paused);
+    
     c = getchar();
     switch (c)
     {
@@ -75,7 +75,6 @@ Screen open_scrmenu(const bool paused) {
       default:
         break;
     }
-    display_scrmenu(selected, paused);
   }
 
 	return screen;

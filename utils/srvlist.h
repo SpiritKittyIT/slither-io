@@ -1,17 +1,9 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <semaphore.h>
 #include <stdbool.h>
 #include <sys/types.h>
 
-#define SHM_FILE "/slither_server_list"
+#define SRVLIST_FILE "/slither_server_list"
 #define SEM_FILE "/slither_server_list_sem"
 #define MAX_SERVER_COUNT 256
 

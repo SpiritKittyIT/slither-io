@@ -109,7 +109,7 @@ bool load_fields_from_file(Map *map, const char *path) {
   return true;
 }
 
-Map *map_new(int size, int max_snakes, bool with_obstacles, const char *from_file) {
+Map *map_new(int size, bool with_obstacles, const char *from_file) {
   srand(time(NULL));
   // If loading from a file, determine size dynamically
   if (from_file) {
@@ -118,17 +118,16 @@ Map *map_new(int size, int max_snakes, bool with_obstacles, const char *from_fil
     }
   }
 
-  size_t result_size = sizeof(Map) + sizeof(Field*) * size * size;
-  Map *result = calloc(1, result_size);
+  size_t fields_size = sizeof(Field*) * size * size;
+  Map *result = calloc(1, sizeof(Map) + fields_size);
 
   if (!result) {
     perror("Failed to allocate memory for Map");
     return NULL;
   }
 
-  result->max_snakes = max_snakes;
   result->size = size;
-  result->snakes = 0;
+  result->fields_size = fields_size;
 
   if (from_file) {
     if (!load_fields_from_file(result, from_file)) {
@@ -201,9 +200,7 @@ bool add_food(Map *map) {
 }
 
 void map_print(Map *map) {
-  printf("max_snakes: %d\n", map->max_snakes);
   printf("size: %d\n", map->size);
-  printf("snakes: %d\n", map->snakes);
   for (int y = 0; y < map->size; y++) {
     for (int x = 0; x < map->size; x++) {
         printf("%s ", field_symbol[map->fields[y * map->size + x]]);

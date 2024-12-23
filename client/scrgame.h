@@ -4,4 +4,4 @@
 
 #include "screen.h"
 
-Screen open_scrgame(const bool paused);
+Screen open_scrgame(bool *paused);

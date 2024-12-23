@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "../utils/srvlist.h"
 #include "../utils/socket.h"
 #include "../utils/map.h"
+#include "../utils/shrmem.h"
 #include "srvflags.h"
 
 void *start_handle_clients(void *arg) {
@@ -38,9 +40,12 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	Map *map = map_new(size, 2, with_obstacles, from_file);
-	if (!map) {
-		fprintf(stderr, "Failed to create map\n");
+	pid_t pid = getpid();
+	printf("Server process id: %d\n", pid);
+
+	MapState *map_state = shrmem_create(pid, size, with_obstacles, from_file);
+	if (!map_state) {
+		fprintf(stderr, "Failed to create shared memory\n");
 		return 1;
 	}
 
@@ -54,8 +59,6 @@ int main(int argc, char *argv[]) {
 
 	printf("Bound to port %d\n", port);
 
-	pid_t pid = getpid();
-	printf("Server process id: %d\n", pid);
 
 	Server server_info;
 	server_info.pid = pid;
@@ -71,9 +74,12 @@ int main(int argc, char *argv[]) {
 	pthread_create(&thread, NULL, start_handle_clients, &sockfd);
 
 	pthread_join(thread, NULL);*/
+	sleep(10);
+	Map *map = shrmem_get_map_init(map_state);
 	map_print(map);
 
 	// cleanup
+	shrmem_destroy(pid);
 	map_destroy(map);
 
 	if (remove_server_from_shared_memory(server_info)) {

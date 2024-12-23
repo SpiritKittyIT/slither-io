@@ -21,12 +21,11 @@ typedef struct {
 
 typedef struct {
 	int size;
-	int max_snakes;
-	int snakes;
+	size_t fields_size;
 	Field fields[];
 } Map;
 
-Map *map_new(int size, int max_snakes, bool with_obstacles, const char *from_file);
+Map *map_new(int size, bool with_obstacles, const char *from_file);
 void map_destroy(Map *map);
 Field map_getfield(Map *map, Coordinate coord);
 bool map_setfield(Map *map, Coordinate coord, Field field);

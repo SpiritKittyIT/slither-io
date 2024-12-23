@@ -23,7 +23,7 @@ static bool initialize_shared_memory(int *shm_fd, ServerList **server_list, bool
   struct stat shm_stat;
 
   // Create or open shared memory
-  *shm_fd = shm_open(SHM_FILE, O_CREAT | O_RDWR, 0666);
+  *shm_fd = shm_open(SRVLIST_FILE, O_CREAT | O_RDWR, 0666);
   if (*shm_fd == -1) {
     perror("shm_open");
     return false;
@@ -33,6 +33,7 @@ static bool initialize_shared_memory(int *shm_fd, ServerList **server_list, bool
   if (fstat(*shm_fd, &shm_stat) == -1) {
     perror("fstat");
     close(*shm_fd);
+
     return false;
   }
 
@@ -41,6 +42,7 @@ static bool initialize_shared_memory(int *shm_fd, ServerList **server_list, bool
   if (*initialized && ftruncate(*shm_fd, sizeof(ServerList)) == -1) {
     perror("ftruncate");
     close(*shm_fd);
+
     return false;
   }
 
@@ -49,6 +51,7 @@ static bool initialize_shared_memory(int *shm_fd, ServerList **server_list, bool
   if (*server_list == MAP_FAILED) {
     perror("mmap");
     close(*shm_fd);
+
     return false;
   }
 
@@ -111,14 +114,15 @@ bool add_server_to_shared_memory(Server new_server) {
   if (sem_wait(sem) == -1) {
     perror("sem_wait");
     sem_close(sem);
-    sem_unlink(SEM_FILE);
+    
     return false;
   }
 
   // Initialize shared memory
   if (!initialize_shared_memory(&shm_fd, &server_list, &initialized)) {
-    sem_post(sem);
+    sem_post(sem);  // Release semaphore before returning
     sem_close(sem);
+
     return false;
   }
 
@@ -128,6 +132,7 @@ bool add_server_to_shared_memory(Server new_server) {
   // Release semaphore
   if (sem_post(sem) == -1) {
     perror("sem_post");
+    result = false;
   }
 
   // Cleanup
@@ -154,23 +159,38 @@ bool remove_server_from_shared_memory(Server new_server) {
   if (sem_wait(sem) == -1) {
     perror("sem_wait");
     sem_close(sem);
-    sem_unlink(SEM_FILE);
+
     return false;
   }
 
   // Initialize shared memory
   if (!initialize_shared_memory(&shm_fd, &server_list, &initialized)) {
-    sem_post(sem);
+    sem_post(sem);  // Release semaphore before returning
     sem_close(sem);
+
     return false;
   }
 
-  // Add the server entry
+  // Remove the server entry
   bool result = remove_server_entry(server_list, new_server);
+
+  // If no servers left, clean up the shared memory and semaphore
+  if (server_list->active_count == 0) {
+    if (shm_unlink(SRVLIST_FILE) == -1) {
+      perror("shm_unlink");
+      result = false;
+    }
+
+    if (sem_unlink(SEM_FILE) == -1) {
+      perror("sem_unlink");
+      result = false;
+    }
+  }
 
   // Release semaphore
   if (sem_post(sem) == -1) {
     perror("sem_post");
+    result = false;
   }
 
   // Cleanup
@@ -189,26 +209,59 @@ static int server_pid_compare(const void *a, const void *b) {
 
 ServerList *get_active_server_list() {
   int shm_fd;
+  sem_t *sem;
   ServerList *server_list;
-  ServerList *result;
+  ServerList *result = calloc(1, sizeof(ServerList));
+
+  if (!result) {
+    perror("Failed to allocate memory for ServerList");
+
+    return NULL;
+  }
+  result->active_count = 0;
+
+  // Try to open the semaphore
+  sem = sem_open(SEM_FILE, O_RDWR);
+  if (sem == SEM_FAILED) {
+    perror("sem_open");
+    free(result);
+    
+    return result;
+  }
+
+  // Acquire the semaphore to prevent race condition
+  if (sem_wait(sem) == -1) {
+    perror("sem_wait");
+    sem_close(sem);
+    free(result);
+
+    return NULL;
+  }
 
   // Open the shared memory object
-  shm_fd = shm_open(SHM_FILE, O_RDONLY, 0666);
+  shm_fd = shm_open(SRVLIST_FILE, O_RDONLY, 0666);
   if (shm_fd == -1) {
     perror("shm_open");
-    return false;
+    sem_post(sem); // Release semaphore
+    sem_close(sem);
+    free(result); // Cleanup
+
+    return NULL;
   }
 
   // Map the shared memory object into the address space
   server_list = mmap(NULL, sizeof(ServerList), PROT_READ, MAP_SHARED, shm_fd, 0);
   if (server_list == MAP_FAILED) {
     perror("mmap");
+    sem_post(sem); // Release semaphore
+    sem_close(sem);
     close(shm_fd);
-    return false;
+    free(result); // Cleanup
+
+    return NULL;
   }
 
   // Copy the contents of the shared memory
-  result = malloc(sizeof(ServerList));
   memcpy(result, server_list, sizeof(ServerList));
 
   // Sort the servers by PID
@@ -217,6 +270,10 @@ ServerList *get_active_server_list() {
   // Cleanup
   munmap(server_list, sizeof(ServerList));
   close(shm_fd);
+
+  // Release the semaphore after accessing shared memory
+  sem_post(sem);
+  sem_close(sem);
 
   return result;
 }

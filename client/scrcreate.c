@@ -10,6 +10,7 @@ static const char* scrcreate_options[] = {
   "Create Game",
   "World type",
   "Game length",
+  "Map size",
 };
 
 static const char* scrcreate_world_types[] = {
@@ -24,12 +25,18 @@ static const char* scrcreate_game_lengths[] = {
   "30 minutes",
 };
 
-static void display_scrcreate(int se_count, int selected, int selected_wt, int selected_gl) {
+static const char* scrcreate_map_sizes[] = {
+  "10x10",
+  "25x25",
+  "50x50",
+};
+
+static void display_scrcreate(int se_count, int selected, int selected_wt, int selected_gl, int selected_ms) {
   clear_screen();
   for (int i = 0; i < se_count; ++i) {
     switch (i)
     {
-      case 2:
+      case 2: 
         if (i == selected) {
           printf("\033[7m%s: %s\033[0m\n", scrcreate_options[i], scrcreate_world_types[selected_wt]);
         } else {
@@ -41,6 +48,13 @@ static void display_scrcreate(int se_count, int selected, int selected_wt, int s
           printf("\033[7m%s: %s\033[0m\n", scrcreate_options[i], scrcreate_game_lengths[selected_gl]);
         } else {
           printf("%s %s\n", scrcreate_options[i], scrcreate_game_lengths[selected_gl]);
+        }
+        break;
+      case 4:
+        if (i == selected) {
+          printf("\033[7m%s: %s\033[0m\n", scrcreate_options[i], scrcreate_map_sizes[selected_ms]);
+        } else {
+          printf("%s %s\n", scrcreate_options[i], scrcreate_map_sizes[selected_ms]);
         }
         break;
       default:
@@ -59,14 +73,16 @@ Screen open_scrcreate() {
   int selected = 0;
   int selected_wt = 0;
   int selected_gl = 0;
-  const int se_count = 4;
+  int selected_ms = 0;
+  const int se_count = 5;
   const int wt_count = 2;
   const int gl_count = 4;
-
-  display_scrcreate(se_count, selected, selected_wt, selected_gl);
+  const int ms_count = 3;
 
 	char c;
   while (screen == SCR_CREATE) {
+    display_scrcreate(se_count, selected, selected_wt, selected_gl, selected_ms);
+
     c = getchar();
     switch (c)
     {
@@ -87,6 +103,9 @@ Screen open_scrcreate() {
           case 3:
             selected_gl = (selected_gl - 1 + gl_count) % gl_count; // Wrap around
             break;
+          case 4:
+            selected_ms = (selected_ms - 1 + ms_count) % ms_count; // Wrap around
+            break;
           default:
             break;
         }
@@ -100,6 +119,9 @@ Screen open_scrcreate() {
             break;
           case 3:
             selected_gl = (selected_gl + 1) % gl_count; // Wrap around
+            break;
+          case 4:
+            selected_ms = (selected_ms + 1) % ms_count; // Wrap around
             break;
           
           default:
@@ -124,7 +146,6 @@ Screen open_scrcreate() {
       default:
         break;
     }
-    display_scrcreate(se_count, selected, selected_wt, selected_gl);
   }
 
 	return screen;
