@@ -32,11 +32,12 @@ void *start_handle_clients(void *arg) {
 
 int main(int argc, char *argv[]) {
 	int size;
+	int length;
 	bool with_obstacles;
 	const char *from_file;
 
 	// Handle flags
-	if (!handle_flags(argc, argv, &size, &with_obstacles, &from_file)) {
+	if (!srvflags_handle(argc, argv, &size, &length, &with_obstacles, &from_file)) {
 		return 1;
 	}
 
@@ -74,7 +75,7 @@ int main(int argc, char *argv[]) {
 	pthread_create(&thread, NULL, start_handle_clients, &sockfd);
 
 	pthread_join(thread, NULL);*/
-	sleep(10);
+	sleep(50);
 	Map *map = shrmem_get_map_init(map_state);
 	map_print(map);
 

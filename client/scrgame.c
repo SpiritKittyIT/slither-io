@@ -1,20 +1,23 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 #include "screen.h"
 #include "scrgame.h"
 #include "winedit.h"
 
-static void display_scrgame() {
+static void display_scrgame(pid_t *srv_pid) {
   clear_screen();
+  printf("%d\n", *srv_pid);
 }
 
-Screen open_scrgame(bool *paused) {
+Screen open_scrgame(bool *paused, pid_t *srv_pid) {
   Screen screen = SCR_GAME;
+  *paused = false;
 
 	char c;
-  while (screen == SCR_GAME && !*paused) {
-    display_scrgame();
+  while (screen == SCR_GAME) {
+    display_scrgame(srv_pid);
     c = getchar();
     switch (c)
     {

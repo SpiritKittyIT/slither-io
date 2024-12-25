@@ -19,6 +19,5 @@ typedef struct {
 
 bool add_server_to_shared_memory(Server new_server);
 bool remove_server_from_shared_memory(Server new_server);
-ServerList *get_active_server_list();
-void srvlist_destroy(ServerList *server_list);
+bool get_active_server_list(ServerList *srvlist);
 bool read_and_print_shared_memory();

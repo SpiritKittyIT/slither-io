@@ -9,21 +9,24 @@
 void print_help() {
   printf("Optional arguments:\n");
   printf("  -s, --size <int>        Set the map size (default: 50)\n");
+  printf("  -l, --length <int>      Set game length (default: 0 - infinite)\n");
   printf("  -o, --obstacles         Add random obstacles to the map\n");
   printf("  -f, --from_file <file>  Load map from the specified file\n");
   printf("  -h, --help              Print this help message and exit\n");
 }
 
 // Function to handle flags
-bool handle_flags(int argc, char *argv[], int *size, bool *with_obstacles, const char **from_file) {
+bool srvflags_handle(int argc, char *argv[], int *size, int *length, bool *with_obstacles, const char **from_file) {
   // Default values
   *size = 10;
+  *length = 0;
   *with_obstacles = false;
   *from_file = NULL;
 
   // Define long options
   static struct option long_options[] = {
     {"size", required_argument, 0, 's'},
+    {"length", required_argument, 0, 'l'},
     {"obstacles", no_argument, 0, 'o'},
     {"from_file", required_argument, 0, 'f'},
     {"help", no_argument, 0, 'h'},
@@ -31,13 +34,19 @@ bool handle_flags(int argc, char *argv[], int *size, bool *with_obstacles, const
   };
 
   int opt;
-  while ((opt = getopt_long(argc, argv, "s:of:h", long_options, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "s:l:of:h", long_options, NULL)) != -1) {
     switch (opt) {
       case 's':
         *size = atoi(optarg);
         if (*size <= 0) {
           fprintf(stderr, "Error: Size must be a positive integer.\n");
           return false;
+        }
+        break;
+      case 'l':
+        *length = atoi(optarg);
+        if (*length < 0) {
+          *length = 0;
         }
         break;
       case 'o':

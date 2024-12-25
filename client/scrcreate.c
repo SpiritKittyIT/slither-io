@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 #include "screen.h"
 #include "scrcreate.h"
@@ -16,6 +22,7 @@ static const char* scrcreate_options[] = {
 static const char* scrcreate_world_types[] = {
   "Empty",
   "Walls",
+  "From file",
 };
 
 static const char* scrcreate_game_lengths[] = {
@@ -68,14 +75,82 @@ static void display_scrcreate(int se_count, int selected, int selected_wt, int s
   }
 }
 
-Screen open_scrcreate() {
+static bool create_game(int selected_wt, int selected_gl, int selected_ms, bool *paused, pid_t *srv_pid, const char *srv_file, const char *map_file) {
+  if (srv_file == NULL) {
+    return false;
+  }
+
+  *paused = false;
+
+  pid_t pid = fork();
+  if (pid == -1) {
+    return false; // Fork failed
+  }
+
+  if (pid == 0) {
+    // Child process: start the server
+    // Redirect stdout and stderr to /dev/null
+    int dev_null = open("/dev/null", O_RDWR);
+    if (dev_null == -1) {
+      exit(EXIT_FAILURE); // Fail if /dev/null cannot be opened
+    }
+
+    dup2(dev_null, STDOUT_FILENO);
+    dup2(dev_null, STDERR_FILENO);
+    close(dev_null);
+
+    // Construct arguments and execute the server
+    const char *ms_arg = NULL;
+    switch (selected_ms) {
+      case 0: ms_arg = "10"; break;
+      case 1: ms_arg = "25"; break;
+      case 2: ms_arg = "50"; break;
+      default: ms_arg = "10"; break; // Default to "10" if out of range
+    }
+
+    const char *gl_arg = NULL;
+    switch (selected_gl) {
+      case 0: gl_arg = "0"; break;
+      case 1: gl_arg = "10"; break;
+      case 2: gl_arg = "20"; break;
+      case 3: gl_arg = "30"; break;
+      default: gl_arg = "0"; break; // Default to "0" if out of range
+    }
+
+    char *args[7] = {NULL}; // Max 6 args: -s, ms_value, -l, gl_value, -o, -f, map_file
+    int idx = 0;
+
+    args[idx++] = "-s";
+    args[idx++] = (char *)ms_arg;
+    args[idx++] = "-l";
+    args[idx++] = (char *)gl_arg;
+
+    if (selected_wt == 1) {
+      args[idx++] = "-o";
+    } else if (selected_wt == 2 && map_file != NULL) {
+      args[idx++] = "-f";
+      args[idx++] = (char *)map_file;
+    }
+
+    args[idx] = NULL; // Null-terminate the argument list
+
+    execv(srv_file, args); // Replace the current process image with a server process image
+    exit(EXIT_FAILURE); // Exit on failure if execv fails
+  } else {
+    // Parent process: save the child PID
+    *srv_pid = pid;
+    return true;
+  }
+}
+
+Screen open_scrcreate(bool *paused, pid_t *srv_pid, const char *srv_file, const char *map_file) {
   Screen screen = SCR_CREATE;
   int selected = 0;
   int selected_wt = 0;
   int selected_gl = 0;
   int selected_ms = 0;
   const int se_count = 5;
-  const int wt_count = 2;
+  const int wt_count = map_file ? 3 : 2;
   const int gl_count = 4;
   const int ms_count = 3;
 
@@ -136,6 +211,8 @@ Screen open_scrcreate() {
             screen = SCR_MENU;
             break;
           case 1:
+            create_game(selected_wt, selected_gl, selected_ms, paused, srv_pid, srv_file, map_file);
+            sleep(1);
             screen = SCR_GAME;
             break;
           default:

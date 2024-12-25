@@ -12,10 +12,13 @@ static const char* scrmenu_options[] = {
   "Quit"
 };
 
-static void display_scrmenu(int selected, bool paused) {
+static void display_scrmenu(int selected, bool paused, const char *srv_file) {
   clear_screen();
   for (int i = 0; i < 4; ++i) {
     if (i == 0 && !paused) {
+      continue;
+    }
+    if (i == 1 && !srv_file) {
       continue;
     }
 
@@ -27,36 +30,43 @@ static void display_scrmenu(int selected, bool paused) {
   }
 }
 
-Screen open_scrmenu(const bool paused) {
-  Screen screen = SCR_MENU;
-  int selected = paused ? 0 : 1;
+static int next_valid_option(int current, int direction, bool paused, const char *srv_file) {
   const int optcount = 4;
+  current = (current + direction + optcount) % optcount;
+  while ((current == 0 && !paused) || (current == 1 && !srv_file)) {
+    current = (current + direction + optcount) % optcount;
+  }
+  return current;
+}
 
-	char c;
+Screen open_scrmenu(bool *paused, const char *srv_file) {
+  Screen screen = SCR_MENU;
+  int selected = 0;
+
+  if (!*paused) {
+    selected = 1;
+  }
+  if (!srv_file && selected == 1) {
+    selected = 2;
+  }
+
+  char c;
   while (screen == SCR_MENU) {
-    display_scrmenu(selected, paused);
-    
+    display_scrmenu(selected, *paused, srv_file);
+
     c = getchar();
-    switch (c)
-    {
+    switch (c) {
       case 'w': case 'W':
-        selected = (selected - 1 + optcount) % optcount; // Wrap around
-        if (!paused && selected == 0) {
-          selected = 3;
-        }
+        selected = next_valid_option(selected, -1, *paused, srv_file);
         break;
 
       case 's': case 'S':
-        selected = (selected + 1) % optcount; // Wrap around
-        if (!paused && selected == 0) {
-          selected = 1;
-        }
+        selected = next_valid_option(selected, 1, *paused, srv_file);
         break;
 
       case '\n': case ' ':
         // Enter key
-        switch (selected)
-        {
+        switch (selected) {
           case 0:
             screen = SCR_GAME;
             break;
@@ -71,11 +81,11 @@ Screen open_scrmenu(const bool paused) {
             break;
         }
         break;
-      
+
       default:
         break;
     }
   }
 
-	return screen;
+  return screen;
 }

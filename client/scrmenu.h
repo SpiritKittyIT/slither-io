@@ -4,4 +4,4 @@
 
 #include "screen.h"
 
-Screen open_scrmenu(const bool paused);
+Screen open_scrmenu(bool *paused, const char *srv_file);

@@ -8,6 +8,7 @@
 #include <semaphore.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#include <errno.h>
 
 #include "srvlist.h"
 
@@ -207,46 +208,53 @@ static int server_pid_compare(const void *a, const void *b) {
   return server_a->pid - server_b->pid;
 }
 
-ServerList *get_active_server_list() {
+bool get_active_server_list(ServerList *srvlist) {
   int shm_fd;
   sem_t *sem;
   ServerList *server_list;
-  ServerList *result = calloc(1, sizeof(ServerList));
+  ServerList *srvlist_tmp = calloc(1, sizeof(ServerList));
 
-  if (!result) {
+  if (!srvlist_tmp) {
     perror("Failed to allocate memory for ServerList");
 
-    return NULL;
+    return false;
   }
-  result->active_count = 0;
+  srvlist_tmp->active_count = 0;
+  memcpy(srvlist, srvlist_tmp, sizeof(ServerList));
+  free(srvlist_tmp);
 
   // Try to open the semaphore
   sem = sem_open(SEM_FILE, O_RDWR);
   if (sem == SEM_FAILED) {
+    if (errno == ENOENT) {
+      // Semaphore file does not exist
+      return true;
+    }
     perror("sem_open");
-    free(result);
-    
-    return result;
+    return false;
   }
 
   // Acquire the semaphore to prevent race condition
   if (sem_wait(sem) == -1) {
     perror("sem_wait");
     sem_close(sem);
-    free(result);
 
-    return NULL;
+    return false;
   }
 
   // Open the shared memory object
   shm_fd = shm_open(SRVLIST_FILE, O_RDONLY, 0666);
   if (shm_fd == -1) {
+    if (errno == ENOENT) {
+      // Shared memory file does not exist
+      sem_post(sem); // Release semaphore
+      sem_close(sem);
+      return true;
+    }
     perror("shm_open");
     sem_post(sem); // Release semaphore
     sem_close(sem);
-    free(result); // Cleanup
-
-    return NULL;
+    return false;
   }
 
   // Map the shared memory object into the address space
@@ -256,16 +264,15 @@ ServerList *get_active_server_list() {
     sem_post(sem); // Release semaphore
     sem_close(sem);
     close(shm_fd);
-    free(result); // Cleanup
 
-    return NULL;
+    return false;
   }
 
   // Copy the contents of the shared memory
-  memcpy(result, server_list, sizeof(ServerList));
+  memcpy(srvlist, server_list, sizeof(ServerList));
 
   // Sort the servers by PID
-  qsort(result->servers, result->active_count, sizeof(Server), server_pid_compare);
+  qsort(srvlist->servers, srvlist->active_count, sizeof(Server), server_pid_compare);
 
   // Cleanup
   munmap(server_list, sizeof(ServerList));
@@ -275,24 +282,28 @@ ServerList *get_active_server_list() {
   sem_post(sem);
   sem_close(sem);
 
-  return result;
-}
-
-void srvlist_destroy(ServerList *server_list) {
-  free(server_list);
+  return true;
 }
 
 bool read_and_print_shared_memory() {
-  ServerList *server_list = get_active_server_list();
+  ServerList *srvlist = calloc(1, sizeof(ServerList));
+  if (!srvlist) {
+    return false;
+  }
+  if (!get_active_server_list(srvlist)) {
+    free(srvlist);
+
+    return false;
+  }
 
   // Print the contents of the shared memory
-  printf("Active servers: %d\n", server_list->active_count);
-  for (int i = 0; i < server_list->active_count; i++) {
-    printf("Server %d: PID = %d, Port = %d\n", i + 1, server_list->servers[i].pid, server_list->servers[i].port);
+  printf("Active servers: %d\n", srvlist->active_count);
+  for (int i = 0; i < srvlist->active_count; i++) {
+    printf("Server %d: PID = %d, Port = %d\n", i + 1, srvlist->servers[i].pid, srvlist->servers[i].port);
   }
 
   // Cleanup
-  srvlist_destroy(server_list);
+  free(srvlist);
 
   return true;
 }
