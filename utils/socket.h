@@ -10,6 +10,7 @@ typedef enum {
     IST_RIGHT,
     IST_PAUSE,
     IST_QUIT,
+    IST_GAME_OVER,
 } Instruction;
 
 typedef struct {

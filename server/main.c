@@ -1,34 +1,15 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/socket.h>
 
 #include "../utils/srvlist.h"
 #include "../utils/socket.h"
 #include "../utils/map.h"
 #include "../utils/shrmem.h"
 #include "srvflags.h"
-
-void *start_handle_clients(void *arg) {
-	int sockfd = *(int*)arg;
-
-	Message message;
-	while (true) {
-		if (!receive_message(sockfd, &message)) {
-			break;
-		}
-		if (message.instruction == IST_QUIT) {
-			break;
-		}
-
-		printf("received message: %d by %d\n", message.instruction, message.pid);
-
-		//if (!read_and_print_shared_memory()) {
-		//	fprintf(stderr, "Failed to read shared memory.\n");
-		//}
-	}
-
-	return NULL;
-}
+#include "socthread.h"
+#include "memthread.h"
 
 int main(int argc, char *argv[]) {
 	int size;
@@ -44,7 +25,7 @@ int main(int argc, char *argv[]) {
 	pid_t pid = getpid();
 	printf("Server process id: %d\n", pid);
 
-	MapState *map_state = shrmem_create(pid, size, with_obstacles, from_file);
+	MapState *map_state = shrmem_create(pid, size, length, with_obstacles, from_file);
 	if (!map_state) {
 		fprintf(stderr, "Failed to create shared memory\n");
 		return 1;
@@ -60,6 +41,11 @@ int main(int argc, char *argv[]) {
 
 	printf("Bound to port %d\n", port);
 
+	if (listen(sockfd, 16) < 0) {
+		perror("listen");
+		unbind_socket(&sockfd);
+		return 1;
+	}
 
 	Server server_info;
 	server_info.pid = pid;
@@ -71,17 +57,29 @@ int main(int argc, char *argv[]) {
 
 	// code
 
-	/*pthread_t thread;
-	pthread_create(&thread, NULL, start_handle_clients, &sockfd);
+	SnakeList *snake_list = snakelist_init();
 
-	pthread_join(thread, NULL);*/
-	sleep(50);
-	Map *map = shrmem_get_map_init(map_state);
-	map_print(map);
+	MemthreadArgs m_args;
+	m_args.map_state = map_state;
+	m_args.snake_list = snake_list;
+	m_args.socfd = sockfd;
+
+	SocthreadArgs s_args;
+	s_args.snake_list = snake_list;
+	s_args.socfd = sockfd;
+
+	pthread_t m_thread;
+	pthread_t s_thread;
+
+	pthread_create(&m_thread, NULL, memthread_start, &m_args);
+	pthread_create(&s_thread, NULL, socthread_start, &s_args);
+
+	pthread_join(m_thread, NULL);
+	pthread_join(s_thread, NULL);
 
 	// cleanup
+	snakelist_destroy(snake_list);
 	shrmem_destroy(pid);
-	map_destroy(map);
 
 	if (remove_server_from_shared_memory(server_info)) {
 		printf("Server entry successfully removed.\n");

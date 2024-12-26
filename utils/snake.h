@@ -24,9 +24,11 @@ typedef struct {
   BodyPart *tail;
   int size;
   Direction dir;
+  bool paused;
 } Snake;
 
 Snake *snake_init(Coordinate coord, Direction dir);
 void snake_destroy(Snake *sll);
-int snake_move(Snake *snake, Map *map);
+bool snake_check_collision(Snake *snake, Map *map);
+bool snake_move(Snake *snake, Map *map);
 bool snake_changedir(Snake *snake, Direction dir);

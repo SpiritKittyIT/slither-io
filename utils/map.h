@@ -30,4 +30,5 @@ void map_destroy(Map *map);
 Field map_getfield(Map *map, Coordinate coord);
 bool map_setfield(Map *map, Coordinate coord, Field field);
 bool add_food(Map *map);
+Coordinate get_spawn_location(Map *map);
 void map_print(Map *map);

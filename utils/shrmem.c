@@ -13,7 +13,7 @@
 #include "snake.h"
 
 // Function to create shared memory and initialize MapState
-MapState *shrmem_create(pid_t pid, int map_size, bool with_obstacles, const char *map_file) {
+MapState *shrmem_create(pid_t pid, int map_size, int game_length, bool with_obstacles, const char *map_file) {
   char shm_path[256];
   snprintf(shm_path, sizeof(shm_path), "%s_%d", SHRMEM_FILE, pid);
 
@@ -67,6 +67,8 @@ MapState *shrmem_create(pid_t pid, int map_size, bool with_obstacles, const char
   free(temp_map);
 
   state->clients = 0;
+  state->game_turns = 0;
+  state->time_limit = game_length;
 
   pthread_mutexattr_destroy(&mutex_attr);
   pthread_condattr_destroy(&cond_attr);
@@ -154,3 +156,81 @@ bool shrmem_get_update(MapState *state, pid_t pid, Map *map, ClientHead *client_
 
   return found;
 }
+
+bool shrmem_get_client_head(MapState *state, pid_t pid, ClientHead *client_head) {
+  bool found = false;
+
+  pthread_mutex_lock(&state->mutex);
+  for (int i = 0; i < state->clients; i++) {
+    if (state->client_heads[i].client_id == pid) {
+      *client_head = state->client_heads[i];  // Direct structure copy
+      found = true;
+      break;
+    }
+  }
+  pthread_mutex_unlock(&state->mutex);
+
+  return found;
+}
+
+bool shrmem_add_client(MapState *state, pid_t pid, Coordinate coord, int score) {
+  pthread_mutex_lock(&state->mutex);
+
+  if (state->clients < MAX_CLIENTS) {
+    state->client_heads[state->clients].client_id = pid;
+    state->client_heads[state->clients].coord = coord;
+    state->client_heads[state->clients].score = score;
+    state->client_heads[state->clients].alive = true;
+    state->clients++;
+
+    pthread_mutex_unlock(&state->mutex);
+
+    return true;
+  }
+
+  pthread_mutex_unlock(&state->mutex);
+
+  return false;
+}
+
+Coordinate shrmem_get_spawn(MapState *state) {
+  pthread_mutex_lock(&state->mutex);
+  Coordinate result = get_spawn_location(&state->map);
+  pthread_mutex_unlock(&state->mutex);
+
+  return result;
+}
+
+bool shrmem_update_client(MapState *state, int index, Coordinate coord, int score) {
+  pthread_mutex_lock(&state->mutex);
+
+  state->client_heads[index].coord = coord;
+  state->client_heads[index].score = score;
+
+  pthread_mutex_unlock(&state->mutex);
+
+  return true;
+}
+
+int shrmem_get_game_turns(MapState *state) {
+  pthread_mutex_lock(&state->mutex);
+  int result = state->game_turns;
+  pthread_mutex_unlock(&state->mutex);
+
+  return result;
+}
+
+void shrmem_inc_game_turns(MapState *state) {
+  pthread_mutex_lock(&state->mutex);
+  ++state->game_turns;
+  pthread_mutex_unlock(&state->mutex);
+}
+
+int shrmem_get_turn_limit(MapState *state, int turn_milisec) {
+  pthread_mutex_lock(&state->mutex);
+  int result = state->time_limit * 60 * 1000 / turn_milisec;
+  pthread_mutex_unlock(&state->mutex);
+
+  return result;
+}
+

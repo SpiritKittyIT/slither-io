@@ -38,6 +38,7 @@ Snake *snake_init(Coordinate coord, Direction dir) {
   snake->tail = snake->head;
   snake->dir = dir;
   snake->size = 1;
+  snake->paused = false;
   
   return snake;
 }
@@ -53,7 +54,13 @@ void snake_destroy(Snake *snake) {
   free(snake);
 }
 
-int snake_move(Snake *snake, Map *map) {
+bool snake_check_collision(Snake *snake, Map *map) {
+  Coordinate coord = coord_sum(snake->head->coord, direction_coord[snake->dir]);
+
+  return !(map_getfield(map, coord) == FIELD_NONE || map_getfield(map, coord) == FIELD_FOOD);
+}
+
+bool snake_move(Snake *snake, Map *map) {
   BodyPart *body_part = snake->head;
   Coordinate coord = coord_sum(body_part->coord, direction_coord[snake->dir]);
   Field field = map_getfield(map, coord);
@@ -61,15 +68,17 @@ int snake_move(Snake *snake, Map *map) {
   while (body_part != NULL) {
     Coordinate tmp_coord = body_part->coord;
     body_part->coord = coord;
+    map_setfield(map, coord, body_part->field);
+    body_part = body_part->next;
     coord = tmp_coord;
   }
 
   if (field == FIELD_FOOD) {
-    map_setfield(map, coord, FIELD_NONE);
+    map_setfield(map, coord, FIELD_BODY);
     snake_grow(snake, coord);
   }
 
-  return 0;
+  return true;
 }
 
 bool snake_changedir(Snake *snake, Direction dir) {

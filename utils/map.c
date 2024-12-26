@@ -199,6 +199,40 @@ bool add_food(Map *map) {
   return false;
 }
 
+Coordinate get_spawn_location(Map *map) {
+  Coordinate spawn_location = { __INT_MAX__, __INT_MAX__ };
+  int total_fields = map->size * map->size;
+
+  // Count the number of FIELD_NONE fields
+  int empty_count = 0;
+  for (int i = 0; i < total_fields; i++) {
+    if (map->fields[i] == FIELD_NONE) {
+      empty_count++;
+    }
+  }
+
+  // If no empty fields are available
+  if (empty_count == 0) {
+    fprintf(stderr, "No empty field available to place food\n");
+    return spawn_location;
+  }
+
+  // Select a random FIELD_NONE
+  int target_index = rand() % empty_count;
+  for (int i = 0; i < total_fields; i++) {
+    if (map->fields[i] == FIELD_NONE) {
+      if (target_index == 0) {
+        spawn_location.x = i % map->size;
+        spawn_location.y = i / map->size;
+        return spawn_location;
+      }
+      target_index--;
+    }
+  }
+
+  return spawn_location;
+}
+
 void map_print(Map *map) {
   printf("size: %d\n", map->size);
   for (int y = 0; y < map->size; y++) {
