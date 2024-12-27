@@ -1,12 +1,31 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <netdb.h>
 
 #include "memthread.h"
 #include "../utils/shrmem.h"
 #include "srvlogic.h"
 #include "snakelist.h"
 #include "../utils/socket.h"
+
+bool send_game_over(int server_fd, int server_port) {
+  Message message;
+
+  message.pid = getpid();
+  message.instruction = IST_GAME_OVER;
+
+  struct sockaddr_in server_addr;
+  if (!ges_server_addr(server_port, &server_addr)) {
+    return false;
+  }
+
+  if (send_message(server_fd, &server_addr, &message)) {
+    return false;
+  }
+
+  return true;
+}
 
 void *memthread_start(void *arg) {
   MemthreadArgs *thread_args = arg;
@@ -17,8 +36,6 @@ void *memthread_start(void *arg) {
   int turn_limit = shrmem_get_turn_limit(thread_args->map_state, TURN_MILISEC);
 
   while (!game_over) {
-    printf("turns: %d\n", turns);
-    printf("turns_without_snakes: %d\n", turns_without_snakes);
     if (game_turn(thread_args->map_state, thread_args->snake_list)) {
       turns_without_snakes = 0;
     }
@@ -30,12 +47,10 @@ void *memthread_start(void *arg) {
 
     if (turn_limit == 0 && turns_without_snakes >= INACTIVE_LIMIT) {
       game_over = true;
-      printf("game_over a\n");
       continue;
     }
 
     if (turn_limit > 0 && turns > turn_limit) {
-      printf("game_over b\n");
       game_over = true;
       continue;
     }
@@ -43,9 +58,7 @@ void *memthread_start(void *arg) {
     usleep(TURN_MILISEC * 1000);
   }
 
-  Message game_over_message;
-  game_over_message.instruction = IST_GAME_OVER;
-  send_message(thread_args->socfd, &game_over_message);
+  send_game_over(thread_args->socfd, thread_args->port);
 
   return NULL;
 }

@@ -13,6 +13,7 @@ typedef struct {
   MapState *map_state;
   SnakeList *snake_list;
   int socfd;
+  int port;
 } MemthreadArgs;
 
 void *memthread_start(void *arg);

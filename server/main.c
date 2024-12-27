@@ -41,11 +41,11 @@ int main(int argc, char *argv[]) {
 
 	printf("Bound to port %d\n", port);
 
-	if (listen(sockfd, 16) < 0) {
+	/*if (listen(sockfd, 16) < 0) {
 		perror("listen");
 		unbind_socket(&sockfd);
 		return 1;
-	}
+	}*/
 
 	Server server_info;
 	server_info.pid = pid;
@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
 	m_args.map_state = map_state;
 	m_args.snake_list = snake_list;
 	m_args.socfd = sockfd;
+	m_args.port = port;
 
 	SocthreadArgs s_args;
 	s_args.snake_list = snake_list;

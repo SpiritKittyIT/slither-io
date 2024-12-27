@@ -5,6 +5,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <string.h>
 
 #include "socket.h"
 #include "map.h"
@@ -13,7 +16,7 @@ bool bind_socket(int *sockfd, int *port) {
   *port = 49152;
   
 	while (true) {
-		*sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		*sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (*sockfd < 0) {
 			perror("socket");
 			return false;
@@ -31,6 +34,7 @@ bool bind_socket(int *sockfd, int *port) {
 		close(*sockfd);
 		++(*port);
 	}
+
 	return false;
 }
 
@@ -44,22 +48,51 @@ void unbind_socket(int *sockfd) {
   *sockfd = -1;
 }
 
-bool send_message(int sockfd, Message *message) {
-	if (send(sockfd, message, sizeof(Message), 0) < 0) {
-		perror("send");
-		return false;
-	}
+bool ges_server_addr(int port, struct sockaddr_in *server_addr) {
+  char hostname[256];
+  struct hostent *host_entry;
+
+  // Get the hostname of the current machine
+  if (gethostname(hostname, sizeof(hostname)) == -1) {
+    perror("gethostname");
+    return false;
+  }
+
+  // Resolve the hostname to an IP address
+  host_entry = gethostbyname(hostname);
+  if (host_entry == NULL) {
+    perror("gethostbyname");
+    return false;
+  }
+
+  // Configure the server address structure
+  memset(server_addr, 0, sizeof(struct sockaddr_in));
+  server_addr->sin_family = AF_INET;
+  server_addr->sin_port = htons(port);
+  memcpy(&server_addr->sin_addr, host_entry->h_addr_list[0], host_entry->h_length);
 
 	return true;
 }
 
-bool receive_message(int sockfd, Message *message) {
-	ssize_t bytes_received = recv(sockfd, message, sizeof(Message), 0);
+bool send_message(int sockfd, struct sockaddr_in *server_addr, Message *message) {
+  ssize_t bytes_sent = sendto(sockfd, message, sizeof(Message), 0, 
+                              (struct sockaddr *)server_addr, sizeof(struct sockaddr_in));
+  if (bytes_sent < 0) {
+    perror("sendto");
+    return false;
+  }
+  return true;
+}
+
+
+bool receive_message(int socfd, Message *message) {
+	struct sockaddr_in client_addr;
+  socklen_t client_addr_len = sizeof(client_addr);
+
+	ssize_t bytes_received = recvfrom(socfd, message, sizeof(message), 0, 
+                                      (struct sockaddr *)&client_addr, &client_addr_len);
 	if (bytes_received < 0) {
 		perror("recv");
-		return false;
-	} else if (bytes_received == 0) {
-		printf("Client disconnected.\n");
 		return false;
 	} else if (bytes_received != sizeof(Message)) {
 		fprintf(stderr, "Incomplete message received.\n");
