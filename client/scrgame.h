@@ -5,4 +5,4 @@
 
 #include "screen.h"
 
-Screen open_scrgame(bool *paused, pid_t *srv_pid);
+Screen open_scrgame(bool *paused);

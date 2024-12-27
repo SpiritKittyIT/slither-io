@@ -9,18 +9,18 @@
 #include "snakelist.h"
 #include "../utils/socket.h"
 
-bool send_game_over(int server_fd, int server_port) {
+bool send_game_over(int socfd, int port) {
   Message message;
 
   message.pid = getpid();
   message.instruction = IST_GAME_OVER;
 
   struct sockaddr_in server_addr;
-  if (!ges_server_addr(server_port, &server_addr)) {
+  if (!get_server_addr(port, &server_addr)) {
     return false;
   }
 
-  if (send_message(server_fd, &server_addr, &message)) {
+  if (send_message(socfd, &server_addr, &message)) {
     return false;
   }
 

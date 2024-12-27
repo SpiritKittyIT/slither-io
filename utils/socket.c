@@ -48,7 +48,7 @@ void unbind_socket(int *sockfd) {
   *sockfd = -1;
 }
 
-bool ges_server_addr(int port, struct sockaddr_in *server_addr) {
+bool get_server_addr(int port, struct sockaddr_in *server_addr) {
   char hostname[256];
   struct hostent *host_entry;
 

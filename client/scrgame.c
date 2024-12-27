@@ -5,19 +5,21 @@
 #include "screen.h"
 #include "scrgame.h"
 #include "winedit.h"
+#include "display.h"
 
-static void display_scrgame(pid_t *srv_pid) {
+static void display_scrgame() {
   clear_screen();
-  printf("%d\n", *srv_pid);
+
+  display_border();
 }
 
-Screen open_scrgame(bool *paused, pid_t *srv_pid) {
+Screen open_scrgame(bool *paused) {
   Screen screen = SCR_GAME;
   *paused = false;
 
 	char c;
   while (screen == SCR_GAME) {
-    display_scrgame(srv_pid);
+    display_scrgame();
     c = getchar();
     switch (c)
     {

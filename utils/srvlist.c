@@ -299,7 +299,8 @@ bool read_and_print_shared_memory() {
   // Print the contents of the shared memory
   printf("Active servers: %d\n", srvlist->active_count);
   for (int i = 0; i < srvlist->active_count; i++) {
-    printf("Server %d: PID = %d, Port = %d\n", i + 1, srvlist->servers[i].pid, srvlist->servers[i].port);
+    printf("Server %d: PID = %d, socfd = %d, Port = %d\n", i + 1,
+           srvlist->servers[i].pid, srvlist->servers[i].socfd, srvlist->servers[i].port);
   }
 
   // Cleanup

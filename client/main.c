@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
       break;
 
     case SCR_GAME:
-      screen = open_scrgame(&paused, &srv_pid);
+      screen = open_scrgame(&paused);
       break;
 
     case SCR_JOIN:

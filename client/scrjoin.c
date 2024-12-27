@@ -33,6 +33,7 @@ Screen open_scrjoin(bool *paused, pid_t *srv_pid) {
   if (!srvlist) {
     return SCR_MENU;
   }
+
   if (!get_active_server_list(srvlist)) {
     free(srvlist);
 

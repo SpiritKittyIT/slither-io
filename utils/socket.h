@@ -22,6 +22,6 @@ typedef struct {
 bool bind_socket(int *sockfd, int *port);
 void unbind_socket(int *sockfd);
 
-bool ges_server_addr(int port, struct sockaddr_in *server_addr);
+bool get_server_addr(int port, struct sockaddr_in *server_addr);
 bool send_message(int sockfd, struct sockaddr_in *server_addr, Message *message);
 bool receive_message(int sockfd, Message *message);

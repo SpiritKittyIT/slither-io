@@ -5,22 +5,26 @@
 #include "winedit.h"
 #include "display.h"
 
-char *get_border(int interface_size, Coordinate coord) {
+#define VIEW_SIZE 10
+
+static char *get_border(int border_size, Coordinate coord) {
+  int border_edge = border_size - 1;
+
   if (coord.x == 0) {
     if (coord.y == 0) {
       return "┌─";
     }
-    if (coord.y == interface_size - 1) {
+    if (coord.y == border_edge) {
       return "┐";
     }
     return "──";
   }
 
-  if (coord.x == interface_size - 1) {
+  if (coord.x == border_edge) {
     if (coord.y == 0) {
       return "└─";
     }
-    if (coord.y == interface_size - 1) {
+    if (coord.y == border_edge) {
       return "┘";
     }
     return "──";
@@ -30,14 +34,33 @@ char *get_border(int interface_size, Coordinate coord) {
     return "│ ";
   }
 
-  if (coord.y == interface_size - 1) {
+  if (coord.y == border_edge) {
     return "│";
   }
 
-  return NULL;
+  return "  ";
 }
 
-void map_dispview(Map *map, int view_size, Coordinate coord) {
+void display_border() {
+  int border_size = VIEW_SIZE + 2;
+  Coordinate coord = {.x = 0, .y = 0};
+  char *symbol = NULL;
+
+  for (int x = 0; x < border_size; x++)
+  {
+    move_cursor(x, 0);
+    for (int y = 0; y < border_size; y++)
+    {
+      coord.x = x;
+      coord.y = y;
+      symbol = get_border(border_size, coord);
+      printf(symbol);
+    }
+  }
+  fflush(stdout);
+}
+
+/*void map_dispview(Map *map, int view_size, Coordinate coord) {
   int tlx = coord.x - view_size / 2;
   int tly = coord.y - view_size / 2;
 
@@ -47,12 +70,12 @@ void map_dispview(Map *map, int view_size, Coordinate coord) {
   char *border = NULL;
   for (int x = 0; x < interface_size; x++)
   {
-    move_cursor(x, 0);
+    move_cursor(x, 2);
     for (int y = 0; y < interface_size; y++)
     {
       position.x = x;
       position.y = y;
-      border = get_border(interface_size, position);
+      border = get_border(position);
       if (border == NULL) {
         position.x += tlx;
         position.y += tly;
@@ -62,36 +85,13 @@ void map_dispview(Map *map, int view_size, Coordinate coord) {
     }
   }
   fflush(stdout);
-}
-
-/*static bool is_in_view(Coordinate head, int view_size, Coordinate coord) {
-  int tlx = head.x - view_size / 2;
-  int tly = head.y - view_size / 2;
-
-  return coord.x >= tlx && coord.x <= tlx + view_size
-      && coord.y >= tly && coord.y <= tly + view_size;
 }*/
-
-void display_snake(Snake *snake, int view_size) {
-  BodyPart *body_part = snake->head;
-  Coordinate head = {
-    .x = body_part->coord.x - view_size / 2,
-    .y = body_part->coord.y - view_size / 2
-  };
-  Coordinate coord = head;
-
-  while (body_part != NULL)
-  {
-    move_cursor(coord.x, coord.y);
-    printf("%s ", field_symbol[body_part->field]);
-    body_part = body_part->next;
-  }
-}
 
 void print_instructions(int start_row, int start_col) {
   const char *instructions[] = {
     "Instructions:",
-    "Press space to exit",
+    "Press Q to exit",
+    "Press P to pause",
     "wasd or arrows to move",
   };
   int num_instructions = sizeof(instructions) / sizeof(instructions[0]);
