@@ -9,7 +9,7 @@
 #define INACTIVE_LIMIT (int)(10 * 1000 / TURN_MILISEC) // 10 seconds
 
 typedef struct {
-  Shrmem *map_state;
+  Shrmem *shrmem;
   SnakeList *snake_list;
   int socfd;
   int port;

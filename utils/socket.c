@@ -59,29 +59,17 @@ void unbind_socket(int *sockfd) {
 }
 
 bool get_server_addr(int port, struct sockaddr_in *server_addr) {
-  char hostname[256];
-  struct hostent *host_entry;
-
-  // Get the hostname of the current machine
-  if (gethostname(hostname, sizeof(hostname)) == -1) {
-    perror("gethostname");
-    return false;
-  }
-
-  // Resolve the hostname to an IP address
-  host_entry = gethostbyname(hostname);
-  if (host_entry == NULL) {
-    perror("gethostbyname");
-    return false;
-  }
-
-  // Configure the server address structure
   memset(server_addr, 0, sizeof(struct sockaddr_in));
   server_addr->sin_family = AF_INET;
   server_addr->sin_port = htons(port);
-  memcpy(&server_addr->sin_addr, host_entry->h_addr_list[0], host_entry->h_length);
 
-	return true;
+  // Use loopback address for localhost
+  if (inet_pton(AF_INET, "127.0.0.1", &server_addr->sin_addr) <= 0) {
+    perror("inet_pton");
+    return false;
+  }
+
+  return true;
 }
 
 bool send_message(int sockfd, struct sockaddr_in *server_addr, Message *message) {

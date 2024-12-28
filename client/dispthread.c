@@ -160,6 +160,7 @@ void *start_dispthread(void *args) {
 
   bool playing = true;
   while (playing) {
+    clear_screen();
     display_border();
     display_map(map, client_head.coord);
     display_info(game_info, &client_head);

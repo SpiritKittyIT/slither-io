@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdio.h>
 
 #include "srvlogic.h"
 #include "../utils/snake.h"
@@ -47,6 +48,8 @@ bool game_turn(Shrmem *shrmem, SnakeList *snake_list) {
     if (!shrmem_get_client_head(shrmem, client_id, &client_head)) { // new client
       Coordinate coord = shrmem_get_spawn(shrmem);
       shrmem_add_client(shrmem, client_id, coord, 1);
+      shrmem_print(shrmem);
+      snake_list->snakes[i] = snake_init(coord, DIR_UP);
 
       ++i;
       continue;
@@ -56,13 +59,12 @@ bool game_turn(Shrmem *shrmem, SnakeList *snake_list) {
       srvlogic_snake_kill(shrmem, snake_list, i);
       snake_count = snakelist_get_count(snake_list);
 
-      ++i;
       continue;
     }
 
     int score = snakelist_get_score(snake_list, i);
     Coordinate head = snakelist_get_head(snake_list, i);
-    shrmem_update_client(shrmem, client_id, head, score);
+    shrmem_update_client(shrmem, i, head, score);
     ++i;
   }
 

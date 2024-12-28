@@ -25,8 +25,8 @@ int main(int argc, char *argv[]) {
 	pid_t pid = getpid();
 	printf("Server process id: %d\n", pid);
 
-	Shrmem *map_state = shrmem_create(pid, size, length, with_obstacles, from_file);
-	if (!map_state) {
+	Shrmem *shrmem = shrmem_create(pid, size, length, with_obstacles, from_file);
+	if (!shrmem) {
 		fprintf(stderr, "Failed to create shared memory\n");
 		return 1;
 	}
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 	SnakeList *snake_list = snakelist_init();
 
 	MemthreadArgs m_args;
-	m_args.map_state = map_state;
+	m_args.shrmem = shrmem;
 	m_args.snake_list = snake_list;
 	m_args.socfd = sockfd;
 	m_args.port = port;

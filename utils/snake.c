@@ -6,8 +6,8 @@
 #include "snake.h"
 
 const Coordinate direction_coord[] = {
-    [DIR_UP] = {0, 1},
-    [DIR_DOWN] = {0, -1},
+    [DIR_UP] = {0, -1},
+    [DIR_DOWN] = {0, 1},
     [DIR_LEFT] = {-1, 0},
     [DIR_RIGHT] = {1, 0},
 };
@@ -62,14 +62,10 @@ bool snake_check_collision(Snake *snake, Map *map) {
 }
 
 bool snake_move(Snake *snake, Map *map) {
-  printf("snake_move - start\n");
   BodyPart *body_part = snake->head;
-  printf("snake_move - 1\n");
   Coordinate coord = coord_sum(body_part->coord, direction_coord[snake->dir]);
-  printf("snake_move - 2\n");
   Field field = map_getfield(map, coord);
 
-  printf("snake_move - a\n");
   while (body_part != NULL) {
     Coordinate tmp_coord = body_part->coord;
     body_part->coord = coord;
@@ -77,13 +73,11 @@ bool snake_move(Snake *snake, Map *map) {
     body_part = body_part->next;
     coord = tmp_coord;
   }
-  printf("snake_move - b\n");
 
   if (field == FIELD_FOOD) {
     map_setfield(map, coord, FIELD_BODY);
     snake_grow(snake, coord);
   }
-  printf("snake_move - end\n");
 
   return true;
 }

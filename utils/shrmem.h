@@ -29,8 +29,8 @@ typedef struct {
 typedef struct {
   pthread_mutex_t mutex;         // Mutex for synchronizing access
   pthread_cond_t cond;           // Condition variable for signaling
-  Map map;                       // Map instance
   GameInfo game_info;            // Game information
+  Map map;                       // Map instance
 } Shrmem;
 
 Shrmem *shrmem_create(pid_t pid, int map_size, int game_length, bool with_obstacles, const char *map_file);
@@ -48,3 +48,4 @@ bool shrmem_update_client(Shrmem *shrmem, int index, Coordinate coord, int score
 int shrmem_get_game_turns(Shrmem *shrmem);
 void shrmem_inc_game_turns(Shrmem *shrmem);
 int shrmem_get_turn_limit(Shrmem *shrmem, int turn_milisec);
+void shrmem_print(Shrmem *shrmem);

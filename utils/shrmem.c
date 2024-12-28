@@ -246,3 +246,22 @@ int shrmem_get_turn_limit(Shrmem *shrmem, int turn_milisec) {
   return result;
 }
 
+void shrmem_print(Shrmem *shrmem) {
+  pthread_mutex_lock(&shrmem->mutex);
+  printf("shrmem ptr: %p\n", shrmem);
+  printf("size: %d\n", shrmem->map.size);
+  printf("fields_size: %ld\n", shrmem->map.fields_size);
+  printf("turns: %d\n", shrmem->game_info.game_turns);
+  printf("clients: %d\n", shrmem->game_info.clients);
+  for (int i = 0; i < shrmem->game_info.clients; i++) {
+    printf("client_id: %d, coord: (%d, %d), score: %d, alive: %d\n",
+    shrmem->game_info.client_heads[i].client_id,
+    shrmem->game_info.client_heads[i].coord.x,
+    shrmem->game_info.client_heads[i].coord.y,
+    shrmem->game_info.client_heads[i].score,
+    shrmem->game_info.client_heads[i].alive);
+  }
+  printf("fields ptr: %p\n", shrmem->map.fields);
+  map_print(&shrmem->map);
+  pthread_mutex_unlock(&shrmem->mutex);
+}
