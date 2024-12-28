@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	pid_t pid = getpid();
 	printf("Server process id: %d\n", pid);
 
-	MapState *map_state = shrmem_create(pid, size, length, with_obstacles, from_file);
+	Shrmem *map_state = shrmem_create(pid, size, length, with_obstacles, from_file);
 	if (!map_state) {
 		fprintf(stderr, "Failed to create shared memory\n");
 		return 1;
@@ -41,12 +41,6 @@ int main(int argc, char *argv[]) {
 
 	printf("Bound to port %d\n", port);
 
-	/*if (listen(sockfd, 16) < 0) {
-		perror("listen");
-		unbind_socket(&sockfd);
-		return 1;
-	}*/
-
 	Server server_info;
 	server_info.pid = pid;
 	server_info.port = port;
@@ -56,6 +50,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// code
+	
+	read_and_print_shared_memory();
 
 	SnakeList *snake_list = snakelist_init();
 

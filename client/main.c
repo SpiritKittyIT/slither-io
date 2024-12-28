@@ -6,7 +6,6 @@
 
 #include "../utils/map.h"
 #include "winedit.h"
-#include "display.h"
 #include "screen.h"
 #include "scrmenu.h"
 #include "scrcreate.h"
@@ -44,7 +43,7 @@ int main(int argc, char *argv[]) {
       break;
 
     case SCR_GAME:
-      screen = open_scrgame(&paused);
+      screen = open_scrgame(&paused, srv_pid);
       break;
 
     case SCR_JOIN:

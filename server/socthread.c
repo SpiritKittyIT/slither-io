@@ -1,16 +1,19 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "socthread.h"
 #include "snakelist.h"
 #include "../utils/socket.h"
+#include "../utils/shrmem.h"
 
-static bool handle_message(SnakeList *snake_list, Message *message) {
+static bool handle_message(SnakeList *snake_list, Shrmem *shrmem, Message *message) {
   printf("Received nstruction %d from PID %d\n", message->instruction, message->pid);
 
   switch (message->instruction) {
     case IST_CONNECT:
-      if (!snakelist_add(snake_list, message->pid)) {
+      Coordinate spawn = shrmem_get_spawn(shrmem);
+      if (!snakelist_add(snake_list, message->pid, spawn)) {
         fprintf(stderr, "Failed to add new client.\n");
       }
       break;
@@ -51,7 +54,7 @@ void *socthread_start(void *args) {
       continue;
     }
 
-    if (handle_message(thread_args->snake_list, &message)) {
+    if (handle_message(thread_args->snake_list, thread_args->shrmem, &message)) {
       break;
     }
   }

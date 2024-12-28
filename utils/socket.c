@@ -38,6 +38,16 @@ bool bind_socket(int *sockfd, int *port) {
 	return false;
 }
 
+bool bind_client_socket(int *sockfd) {
+	*sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (*sockfd < 0) {
+			perror("socket");
+			return false;
+	}
+
+	return true;
+}
+
 void unbind_socket(int *sockfd) {
 	if (*sockfd >= 0) {
 		if (close(*sockfd) == -1) {
@@ -83,7 +93,6 @@ bool send_message(int sockfd, struct sockaddr_in *server_addr, Message *message)
   }
   return true;
 }
-
 
 bool receive_message(int socfd, Message *message) {
 	struct sockaddr_in client_addr;

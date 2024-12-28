@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdio.h>
 
 #include "snakelist.h"
 #include "../utils/snake.h"
@@ -21,7 +22,7 @@ void snakelist_destroy(SnakeList *snake_list) {
   free(snake_list);
 }
 
-bool snakelist_add(SnakeList *snake_list, pid_t client_id) {
+bool snakelist_add(SnakeList *snake_list, pid_t client_id, Coordinate coord) {
   pthread_mutex_lock(&snake_list->mutex);
 
   if (snake_list->snake_count >= MAX_CLIENTS) {
@@ -30,6 +31,9 @@ bool snakelist_add(SnakeList *snake_list, pid_t client_id) {
   }
 
   snake_list->client_ids[snake_list->snake_count] = client_id;
+  snake_list->snakes[snake_list->snake_count] = snake_init(coord, DIR_UP);
+
+  printf("added snake: %d\n", snake_list->snakes[snake_list->snake_count]->dir);
   ++snake_list->snake_count;
 
   pthread_mutex_unlock(&snake_list->mutex);

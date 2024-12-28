@@ -11,6 +11,7 @@
 
 bool send_game_over(int socfd, int port) {
   Message message;
+  printf("Sending game over message to socfd: %d\n", socfd);
 
   message.pid = getpid();
   message.instruction = IST_GAME_OVER;

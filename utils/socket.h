@@ -20,6 +20,7 @@ typedef struct {
 } Message;
 
 bool bind_socket(int *sockfd, int *port);
+bool bind_client_socket(int *sockfd);
 void unbind_socket(int *sockfd);
 
 bool get_server_addr(int port, struct sockaddr_in *server_addr);

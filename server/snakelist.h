@@ -16,7 +16,7 @@ typedef struct {
 
 SnakeList *snakelist_init();
 void snakelist_destroy(SnakeList *snake_list);
-bool snakelist_add(SnakeList *snake_list, pid_t client_id);
+bool snakelist_add(SnakeList *snake_list, pid_t client_id, Coordinate coord);
 bool snakelist_spawn(SnakeList *snake_list, int index, Coordinate coord, Direction dir);
 bool snakelist_pause(SnakeList *snake_list, int index);
 pid_t snakelist_get_client_id(SnakeList *snake_list, int index);

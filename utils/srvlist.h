@@ -9,7 +9,6 @@
 
 typedef struct {
     pid_t pid;
-    int socfd;
     int port;
 } Server;
 
