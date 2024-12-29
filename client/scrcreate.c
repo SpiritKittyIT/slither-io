@@ -41,6 +41,7 @@ static const char* scrcreate_map_sizes[] = {
 
 static void display_scrcreate(int se_count, int selected, int selected_wt, int selected_gl, int selected_ms) {
   clear_screen();
+  move_cursor(0, 0);
   for (int i = 0; i < se_count; ++i) {
     switch (i)
     {

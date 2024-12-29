@@ -10,6 +10,7 @@
 
 static void display_scrjoin(int selected, ServerList *srvlist) {
   clear_screen();
+  move_cursor(0, 0);
   if (selected == 0) {
     printf("\033[7m%s\033[0m\n", "Return to Menu");
   } else {

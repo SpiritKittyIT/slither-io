@@ -6,11 +6,11 @@
 #include "map.h"
 
 const char *field_symbol[] = {
-	[FIELD_WALL] = "⌗", //⌗⏹
+	[FIELD_WALL] = "#", // ⌗
 	[FIELD_NONE] = " ",
-	[FIELD_FOOD] = "•", //•⏺
-	[FIELD_HEAD] = "፠",
-	[FIELD_BODY] = "፨",
+	[FIELD_FOOD] = "-", // •
+	[FIELD_HEAD] = "@", // ፠
+	[FIELD_BODY] = "x", // ፨
 };
 
 static bool calculate_map_size(const char *path, int *size) {
