@@ -46,7 +46,6 @@ bool shrmem_add_client(Shrmem *shrmem, pid_t pid, Coordinate coord, int score);
 Coordinate shrmem_get_spawn(Shrmem *shrmem);
 bool shrmem_remove_client(Shrmem *shrmem, pid_t pid);
 bool shrmem_update_client(Shrmem *shrmem, ClientHead *client_head);
-int shrmem_get_game_turns(Shrmem *shrmem);
 void shrmem_inc_game_turns(Shrmem *shrmem);
 int shrmem_get_turn_limit(Shrmem *shrmem, int turn_milisec);
 void shrmem_set_game_over(Shrmem *shrmem);

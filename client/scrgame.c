@@ -13,17 +13,6 @@
 #include "../utils/socket.h"
 #include "../utils/srvlist.h"
 
-/*static int asdf() {
-    // Step 2: Configure the server address
-    struct sockaddr_in server_addr;
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(12345); // Replace with the server's bound port
-    server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // Use localhost (127.0.0.1)
-
-    return 0;
-}*/
-
 static void get_server(Server *server) {
   ServerList *srvlist = calloc(1, sizeof(ServerList));
   if (!srvlist) {

@@ -246,14 +246,6 @@ bool shrmem_update_client(Shrmem *shrmem, ClientHead *client_head) {
   return true;
 }
 
-int shrmem_get_game_turns(Shrmem *shrmem) {
-  pthread_mutex_lock(&shrmem->mutex);
-  int result = shrmem->game_info.game_turns;
-  pthread_mutex_unlock(&shrmem->mutex);
-
-  return result;
-}
-
 void shrmem_inc_game_turns(Shrmem *shrmem) {
   pthread_mutex_lock(&shrmem->mutex);
   ++shrmem->game_info.game_turns;

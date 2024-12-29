@@ -37,15 +37,15 @@ static void set_conio_terminal_mode(struct termios *orig_termios) {
 }
 
 static void restore_terminal_mode(struct termios *orig_termios) {
-    tcsetattr(STDIN_FILENO, TCSANOW, orig_termios);
+  tcsetattr(STDIN_FILENO, TCSANOW, orig_termios);
 }
 
-void hide_cursor() {
-    system("tput civis");
+static void hide_cursor() {
+  system("tput civis");
 }
 
-void show_cursor() {
-    system("tput cnorm");
+static void show_cursor() {
+  system("tput cnorm");
 }
 
 void init_game_screen(struct termios *orig_termios) {
