@@ -12,6 +12,7 @@
 #include "scrgame.h"
 #include "scrjoin.h"
 #include "clientflags.h"
+#include "../utils/srvlist.h"
 
 int main(int argc, char *argv[]) {
   const char *srv_file;
@@ -27,7 +28,9 @@ int main(int argc, char *argv[]) {
   init_game_screen(&orig_termios);
 
   bool paused = false;
-  pid_t srv_pid = -1;
+  Server server;
+  server.pid = 0;
+  server.port = 0;
 
   Screen screen = SCR_MENU;
   
@@ -35,19 +38,19 @@ int main(int argc, char *argv[]) {
     switch (screen)
     {
     case SCR_MENU:
-      screen = open_scrmenu(&paused, srv_file);
+      screen = open_scrmenu(&paused, &server, srv_file);
       break;
 
     case SCR_CREATE:
-      screen = open_scrcreate(&paused, &srv_pid, srv_file, map_file);
+      screen = open_scrcreate(&paused, &server, srv_file, map_file);
       break;
 
     case SCR_GAME:
-      screen = open_scrgame(&paused, srv_pid);
+      screen = open_scrgame(&paused, &server);
       break;
 
     case SCR_JOIN:
-      screen = open_scrjoin(&paused, &srv_pid);
+      screen = open_scrjoin(&paused, &server);
       break;
     
     default:

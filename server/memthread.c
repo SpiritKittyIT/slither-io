@@ -20,10 +20,9 @@ bool send_game_over(int socfd, int port) {
     return false;
   }
 
-  printf("Sending game over message %d %d\n", socfd, message.pid);
-  /*if (send_message(socfd, &server_addr, &message)) {
+  if (send_message(socfd, &server_addr, &message)) {
     return false;
-  }*/
+  }
 
   return true;
 }
@@ -37,6 +36,7 @@ void *memthread_start(void *arg) {
   int turn_limit = shrmem_get_turn_limit(thread_args->shrmem, TURN_MILISEC);
 
   while (!game_over) {
+    printf("snakes: %d\n", snakelist_get_count(thread_args->snake_list));
     shrmem_print(thread_args->shrmem);
     if (game_turn(thread_args->shrmem, thread_args->snake_list)) {
       turns_without_snakes = 0;
@@ -61,6 +61,10 @@ void *memthread_start(void *arg) {
   }
 
   send_game_over(thread_args->socfd, thread_args->port);
+  usleep(TURN_MILISEC * 1000);
+  shrmem_set_game_over(thread_args->shrmem);
+  shrmem_notify(thread_args->shrmem);
+  usleep(TURN_MILISEC * 1000);
 
   return NULL;
 }

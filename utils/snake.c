@@ -10,6 +10,7 @@ const Coordinate direction_coord[] = {
     [DIR_DOWN] = {0, 1},
     [DIR_LEFT] = {-1, 0},
     [DIR_RIGHT] = {1, 0},
+    [DIR_NONE] = {0, 0},
 };
 
 static BodyPart *snake_create_bodypart(Coordinate coord, Field field) {
@@ -55,16 +56,21 @@ void snake_destroy(Snake *snake) {
   free(snake);
 }
 
-bool snake_check_collision(Snake *snake, Map *map) {
-  Coordinate coord = coord_sum(snake->head->coord, direction_coord[snake->dir]);
-
-  return !(map_getfield(map, coord) == FIELD_NONE || map_getfield(map, coord) == FIELD_FOOD);
-}
-
 bool snake_move(Snake *snake, Map *map) {
   BodyPart *body_part = snake->head;
   Coordinate coord = coord_sum(body_part->coord, direction_coord[snake->dir]);
   Field field = map_getfield(map, coord);
+
+  if (snake->dir != DIR_NONE && field != FIELD_NONE && field != FIELD_FOOD) {
+    return false;
+  }
+
+  map_setfield(map, snake->tail->coord, FIELD_NONE);
+
+  if (field == FIELD_FOOD) {
+    map_setfield(map, coord, FIELD_BODY);
+    snake_grow(snake, coord);
+  }
 
   while (body_part != NULL) {
     Coordinate tmp_coord = body_part->coord;
@@ -72,11 +78,6 @@ bool snake_move(Snake *snake, Map *map) {
     map_setfield(map, coord, body_part->field);
     body_part = body_part->next;
     coord = tmp_coord;
-  }
-
-  if (field == FIELD_FOOD) {
-    map_setfield(map, coord, FIELD_BODY);
-    snake_grow(snake, coord);
   }
 
   return true;

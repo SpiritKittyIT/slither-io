@@ -7,6 +7,7 @@
 #include "../utils/map.h"
 #include "../utils/snake.h"
 #include "../utils/shrmem.h"
+#include "../utils/srvlist.h"
 
 #define VIEW_SIZE 10
 
@@ -103,7 +104,7 @@ static void display_info(GameInfo *game_info, ClientHead *client_head) {
   }
 
   if (game_info->game_over) {
-    printf("Game ended!");
+    printf(" (GAME OVER)");
   }
 
   move_cursor(3, col_offset);
@@ -117,22 +118,6 @@ static void display_info(GameInfo *game_info, ClientHead *client_head) {
 
   fflush(stdout);
 }
-
-/*static void print_instructions(int start_row, int start_col) {
-  const char *instructions[] = {
-    "Instructions:",
-    "Press Q to exit",
-    "Press P to pause",
-    "wasd to move",
-  };
-  int num_instructions = sizeof(instructions) / sizeof(instructions[0]);
-
-  for (int i = 0; i < num_instructions; i++) {
-    move_cursor(start_row + i, start_col);
-    printf("%s", instructions[i]);
-  }
-  fflush(stdout);
-}*/
 
 static bool get_client_head(GameInfo *game_info, pid_t pid, ClientHead *client_head) {
   for (int i = 0; i < game_info->clients; i++) {
@@ -150,7 +135,13 @@ void *start_dispthread(void *args) {
   DispthreadArgs *thread_args = args;
 
   size_t size;
-  Shrmem *shrmem = shrmem_access(thread_args->srv_pid, &size);
+  Shrmem *shrmem = shrmem_access(thread_args->server->pid, &size);
+  if (shrmem == NULL) {
+    *thread_args->paused = false;
+    clear_screen();
+    printf("Server inactive\n");
+    return NULL;
+  }
   Map *map = shrmem_get_map_init(shrmem);
   GameInfo *game_info = shrmem_game_info_init(shrmem);
   ClientHead client_head;
@@ -158,13 +149,18 @@ void *start_dispthread(void *args) {
   client_head.coord.y = VIEW_SIZE / 2;
   client_head.alive = true;
 
+  clear_screen();
+  display_border();
+  display_map(map, client_head.coord);
+  display_info(game_info, &client_head);
+
   bool playing = true;
   while (playing) {
-    clear_screen();
-    display_border();
-    display_map(map, client_head.coord);
-    display_info(game_info, &client_head);
-    
+    if (thread_args->server->pid == 0) {
+      playing = false;
+      continue;
+    }
+
     if (!shrmem_get_update(shrmem, map, game_info)) {
       playing = false;
       continue;
@@ -172,17 +168,24 @@ void *start_dispthread(void *args) {
 
     if (game_info->game_over) {
       playing = false;
-      continue;
     }
     
     if (!get_client_head(game_info, thread_args->client_pid, &client_head)) {
       continue;
     }
     
-    if (client_head.alive) {
+    if (!client_head.alive) {
       playing = false;
-      continue;
     }
+
+    if (*thread_args->paused) {
+      playing = false;
+    }
+
+    clear_screen();
+    display_border();
+    display_map(map, client_head.coord);
+    display_info(game_info, &client_head);
   }
 
   shrmem_disconnect(shrmem, size);

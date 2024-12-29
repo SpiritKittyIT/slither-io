@@ -18,7 +18,7 @@ static bool srvlogic_snake_move(Shrmem *shrmem, SnakeList *snake_list, int index
   return result;
 }
 
-static bool srvlogic_snake_kill(Shrmem *shrmem, SnakeList *snake_list, int index) {
+bool srvlogic_snake_kill(Shrmem *shrmem, SnakeList *snake_list, int index) {
   pthread_mutex_lock(&shrmem->mutex);
   pthread_mutex_lock(&snake_list->mutex);
   
@@ -49,8 +49,13 @@ bool game_turn(Shrmem *shrmem, SnakeList *snake_list) {
       Coordinate coord = shrmem_get_spawn(shrmem);
       shrmem_add_client(shrmem, client_id, coord, 1);
       shrmem_print(shrmem);
-      snake_list->snakes[i] = snake_init(coord, DIR_UP);
+      snake_list->snakes[i] = snake_init(coord, DIR_NONE);
 
+      ++i;
+      continue;
+    }
+
+    if (snakelist_paused_i(snake_list, i)) {
       ++i;
       continue;
     }
@@ -62,11 +67,13 @@ bool game_turn(Shrmem *shrmem, SnakeList *snake_list) {
       continue;
     }
 
-    int score = snakelist_get_score(snake_list, i);
-    Coordinate head = snakelist_get_head(snake_list, i);
-    shrmem_update_client(shrmem, i, head, score);
+    client_head.score = snakelist_get_score(snake_list, i);
+    client_head.coord = snakelist_get_head(snake_list, i);
+    shrmem_update_client(shrmem, &client_head);
     ++i;
   }
+
+  shrmem_spawn_food(shrmem, snake_count);
 
   shrmem_notify(shrmem);
 

@@ -29,6 +29,6 @@ Map *map_new(int size, bool with_obstacles, const char *from_file);
 void map_destroy(Map *map);
 Field map_getfield(Map *map, Coordinate coord);
 bool map_setfield(Map *map, Coordinate coord, Field field);
-bool add_food(Map *map);
+bool spawn_food(Map *map, int food_count);
 Coordinate get_spawn_location(Map *map);
 void map_print(Map *map);

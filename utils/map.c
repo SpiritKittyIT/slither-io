@@ -167,33 +167,40 @@ bool map_setfield(Map *map, Coordinate coord, Field field) {
   return true;
 }
 
-bool add_food(Map *map) {
+bool spawn_food(Map *map, int food_count) {
   int total_fields = map->size * map->size;
 
-  // Count the number of FIELD_NONE fields
   int empty_count = 0;
+  int existing_food_count = 0;
   for (int i = 0; i < total_fields; i++) {
     if (map->fields[i] == FIELD_NONE) {
-      empty_count++;
+      ++empty_count;
+    }
+    if (map->fields[i] == FIELD_FOOD) {
+      ++existing_food_count;
     }
   }
 
-  // If no empty fields are available, return false
-  if (empty_count == 0) {
-    fprintf(stderr, "No empty field available to place food\n");
-    return false;
-  }
+  for (int i = 0; i < food_count - existing_food_count; i++) {
+    // If no empty fields are available, return false
+    if (empty_count == 0) {
+      fprintf(stderr, "No empty field available to place food\n");
+      return false;
+    }
 
-  // Select a random FIELD_NONE
-  int target_index = rand() % empty_count;
-  for (int i = 0; i < total_fields; i++) {
-    if (map->fields[i] == FIELD_NONE) {
-      if (target_index == 0) {
-        map->fields[i] = FIELD_FOOD;
-        return true;
+    // Select a random FIELD_NONE
+    int target_index = rand() % empty_count;
+    for (int i = 0; i < total_fields; i++) {
+      if (map->fields[i] == FIELD_NONE) {
+        if (target_index == 0) {
+          map->fields[i] = FIELD_FOOD;
+          return true;
+        }
+        --target_index;
       }
-      target_index--;
     }
+
+    --empty_count;
   }
 
   return false;

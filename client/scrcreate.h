@@ -4,5 +4,6 @@
 #include <sys/types.h>
 
 #include "screen.h"
+#include "../utils/srvlist.h"
 
-Screen open_scrcreate(bool *paused, pid_t *srv_pid, const char *srv_file, const char *map_file);
+Screen open_scrcreate(bool *paused, Server *server, const char *srv_file, const char *map_file);

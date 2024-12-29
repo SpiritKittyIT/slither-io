@@ -6,9 +6,11 @@
 #include "snakelist.h"
 #include "../utils/socket.h"
 #include "../utils/shrmem.h"
+#include "srvlogic.h"
+#include "snakelist.h"
 
-static bool handle_message(SnakeList *snake_list, Message *message) {
-  printf("Received nstruction %d from PID %d\n", message->instruction, message->pid);
+static bool handle_message(SnakeList *snake_list, Shrmem *shrmem, Message *message) {
+  printf("Received instruction %d from PID %d\n", message->instruction, message->pid);
 
   switch (message->instruction) {
     case IST_CONNECT:
@@ -32,7 +34,11 @@ static bool handle_message(SnakeList *snake_list, Message *message) {
       snakelist_pause(snake_list, message->pid);
       break;
     case IST_QUIT:
-      snakelist_remove(snake_list, message->pid);
+      int index = 0;
+      if (snakelist_get_index(snake_list, message->pid, &index)) {
+        srvlogic_snake_kill(shrmem, snake_list, index);
+      }
+      shrmem_remove_client(shrmem, message->pid);
       break;
     case IST_GAME_OVER:
       return true;
@@ -49,12 +55,11 @@ void *socthread_start(void *args) {
 
   // Receive messages in a loop
   while (true) {
-    break;
     if (!receive_message(thread_args->socfd, &message)) {
       continue;
     }
 
-    if (handle_message(thread_args->snake_list, &message)) {
+    if (handle_message(thread_args->snake_list, thread_args->shrmem, &message)) {
       break;
     }
   }

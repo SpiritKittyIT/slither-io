@@ -46,12 +46,26 @@ bool snakelist_spawn(SnakeList *snake_list, int index, Coordinate coord, Directi
   return true;
 }
 
-bool snakelist_pause(SnakeList *snake_list, int index) {
+bool snakelist_pause(SnakeList *snake_list, pid_t client_id) {
   pthread_mutex_lock(&snake_list->mutex);
-  snake_list->snakes[index]->paused = true;
+
+  for (int i = 0; i < snake_list->snake_count; ++i) {
+    if (snake_list->client_ids[i] == client_id) {
+      snake_list->snakes[i]->paused = !snake_list->snakes[i]->paused;
+    }
+  }
+
   pthread_mutex_unlock(&snake_list->mutex);
 
   return true;
+}
+
+bool snakelist_paused_i(SnakeList *snake_list, int index) {
+  pthread_mutex_lock(&snake_list->mutex);
+  bool result = snake_list->snakes[index]->paused;
+  pthread_mutex_unlock(&snake_list->mutex);
+
+  return result;
 }
 
 pid_t snakelist_get_client_id(SnakeList *snake_list, int index) {
@@ -184,4 +198,19 @@ bool snakelist_left(SnakeList *snake_list, pid_t client_id) {
 
   pthread_mutex_unlock(&snake_list->mutex);
   return result;
+}
+bool snakelist_get_index(SnakeList *snake_list, pid_t client_id, int *index) {
+  pthread_mutex_lock(&snake_list->mutex);
+
+  for (int i = 0; i < snake_list->snake_count; ++i) {
+    if (snake_list->client_ids[i] == client_id) {
+      *index = i;
+      pthread_mutex_unlock(&snake_list->mutex);
+      return true;
+    }
+  }
+
+  pthread_mutex_unlock(&snake_list->mutex);
+
+  return false;
 }

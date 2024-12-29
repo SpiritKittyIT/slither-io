@@ -10,6 +10,7 @@
 #include "screen.h"
 #include "scrcreate.h"
 #include "winedit.h"
+#include "../utils/srvlist.h"
 
 static const char* scrcreate_options[] = {
   "Return to Menu",
@@ -75,7 +76,7 @@ static void display_scrcreate(int se_count, int selected, int selected_wt, int s
   }
 }
 
-static bool create_game(int selected_wt, int selected_gl, int selected_ms, bool *paused, pid_t *srv_pid, const char *srv_file, const char *map_file) {
+static bool create_game(int selected_wt, int selected_gl, int selected_ms, bool *paused, Server *server, const char *srv_file, const char *map_file) {
   if (srv_file == NULL) {
     return false;
   }
@@ -138,12 +139,12 @@ static bool create_game(int selected_wt, int selected_gl, int selected_ms, bool 
     exit(EXIT_FAILURE); // Exit on failure if execv fails
   } else {
     // Parent process: save the child PID
-    *srv_pid = pid;
+    server->pid = pid;
     return true;
   }
 }
 
-Screen open_scrcreate(bool *paused, pid_t *srv_pid, const char *srv_file, const char *map_file) {
+Screen open_scrcreate(bool *paused, Server *server, const char *srv_file, const char *map_file) {
   Screen screen = SCR_CREATE;
   int selected = 0;
   int selected_wt = 0;
@@ -211,7 +212,7 @@ Screen open_scrcreate(bool *paused, pid_t *srv_pid, const char *srv_file, const 
             screen = SCR_MENU;
             break;
           case 1:
-            create_game(selected_wt, selected_gl, selected_ms, paused, srv_pid, srv_file, map_file);
+            create_game(selected_wt, selected_gl, selected_ms, paused, server, srv_file, map_file);
             sleep(1);
             screen = SCR_GAME;
             break;

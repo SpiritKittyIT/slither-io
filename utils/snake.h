@@ -7,6 +7,7 @@ typedef enum {
 	DIR_DOWN,
 	DIR_LEFT,
 	DIR_RIGHT,
+  DIR_NONE,
 } Direction;
 
 extern const Coordinate direction_coord[];
@@ -29,6 +30,5 @@ typedef struct {
 
 Snake *snake_init(Coordinate coord, Direction dir);
 void snake_destroy(Snake *sll);
-bool snake_check_collision(Snake *snake, Map *map);
 bool snake_move(Snake *snake, Map *map);
 bool snake_changedir(Snake *snake, Direction dir);

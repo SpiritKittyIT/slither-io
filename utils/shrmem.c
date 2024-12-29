@@ -213,11 +213,33 @@ Coordinate shrmem_get_spawn(Shrmem *shrmem) {
   return result;
 }
 
-bool shrmem_update_client(Shrmem *shrmem, int index, Coordinate coord, int score) {
+bool shrmem_remove_client(Shrmem *shrmem, pid_t pid) {
+  bool found = false;
   pthread_mutex_lock(&shrmem->mutex);
 
-  shrmem->game_info.client_heads[index].coord = coord;
-  shrmem->game_info.client_heads[index].score = score;
+  for (int i = 0; i < shrmem->game_info.clients; i++) {
+    if (shrmem->game_info.client_heads[i].client_id == pid) {
+      --shrmem->game_info.clients;
+      shrmem->game_info.client_heads[i] = shrmem->game_info.client_heads[shrmem->game_info.clients];
+      found = true;
+      break;
+    }
+  }
+
+  pthread_mutex_unlock(&shrmem->mutex);
+
+  return found;
+}
+
+bool shrmem_update_client(Shrmem *shrmem, ClientHead *client_head) {
+  pthread_mutex_lock(&shrmem->mutex);
+
+  for (int i = 0; i < shrmem->game_info.clients; i++) {
+    if (shrmem->game_info.client_heads[i].client_id == client_head->client_id) {
+      shrmem->game_info.client_heads[i] = *client_head;
+      break;
+    }
+  }
 
   pthread_mutex_unlock(&shrmem->mutex);
 
@@ -246,11 +268,22 @@ int shrmem_get_turn_limit(Shrmem *shrmem, int turn_milisec) {
   return result;
 }
 
+void shrmem_set_game_over(Shrmem *shrmem) {
+  pthread_mutex_lock(&shrmem->mutex);
+  shrmem->game_info.game_over = true;
+  pthread_mutex_unlock(&shrmem->mutex);
+}
+
+bool shrmem_spawn_food(Shrmem *shrmem, int food_count) {
+  pthread_mutex_lock(&shrmem->mutex);
+  bool result = spawn_food(&shrmem->map, food_count);
+  pthread_mutex_unlock(&shrmem->mutex);
+
+  return result;
+}
+
 void shrmem_print(Shrmem *shrmem) {
   pthread_mutex_lock(&shrmem->mutex);
-  printf("shrmem ptr: %p\n", shrmem);
-  printf("size: %d\n", shrmem->map.size);
-  printf("fields_size: %ld\n", shrmem->map.fields_size);
   printf("turns: %d\n", shrmem->game_info.game_turns);
   printf("clients: %d\n", shrmem->game_info.clients);
   for (int i = 0; i < shrmem->game_info.clients; i++) {
@@ -261,7 +294,6 @@ void shrmem_print(Shrmem *shrmem) {
     shrmem->game_info.client_heads[i].score,
     shrmem->game_info.client_heads[i].alive);
   }
-  printf("fields ptr: %p\n", shrmem->map.fields);
   map_print(&shrmem->map);
   pthread_mutex_unlock(&shrmem->mutex);
 }

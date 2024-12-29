@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <netdb.h>
+#include <unistd.h>
 
 #include "screen.h"
 #include "scrmenu.h"
 #include "winedit.h"
+#include "../utils/socket.h"
+#include "../utils/srvlist.h"
 
 static const char* scrmenu_options[] = {
   "Resume Game",
@@ -39,7 +43,28 @@ static int next_valid_option(int current, int direction, bool paused, const char
   return current;
 }
 
-Screen open_scrmenu(bool *paused, const char *srv_file) {
+void send_quit(int port) {
+  if (port == 0) {
+    return;
+  }
+
+  int socfd;
+  if (!bind_client_socket(&socfd)) {
+    return;
+  }
+
+  struct sockaddr_in server_addr;
+  get_server_addr(port, &server_addr);
+
+  Message message;
+  message.pid = getpid();
+  message.instruction = IST_QUIT;
+  send_message(socfd, &server_addr, &message);
+
+  unbind_socket(&socfd);
+}
+
+Screen open_scrmenu(bool *paused, Server *server, const char *srv_file) {
   Screen screen = SCR_MENU;
   int selected = 0;
 
@@ -77,6 +102,7 @@ Screen open_scrmenu(bool *paused, const char *srv_file) {
             screen = SCR_JOIN;
             break;
           default:
+            send_quit(server->port);
             screen = SCR_QUIT;
             break;
         }

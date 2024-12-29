@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
 
 	SocthreadArgs s_args;
 	s_args.snake_list = snake_list;
+	s_args.shrmem = shrmem;
 	s_args.socfd = sockfd;
 
 	pthread_t m_thread;

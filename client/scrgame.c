@@ -24,32 +24,34 @@
     return 0;
 }*/
 
-Screen open_scrgame(bool *paused, pid_t srv_pid) {
+static void get_server(Server *server) {
   ServerList *srvlist = calloc(1, sizeof(ServerList));
   if (!srvlist) {
-    return SCR_MENU;
+    return;
   }
 
   if (!get_active_server_list(srvlist)) {
     free(srvlist);
 
-    return SCR_MENU;
+    return;
   }
 
-  Server server;
-  server.pid = 0;
   for (int i = 0; i < srvlist->active_count; i++) {
-    if (srvlist->servers[i].pid == srv_pid) {
-      server = srvlist->servers[i];
-      break;
+    if (srvlist->servers[i].pid == server->pid) {
+      server->port = srvlist->servers[i].port;
     }
   }
+
   free(srvlist);
+}
 
-  if (server.pid == 0) {
-    fprintf(stderr, "Server not found\n");
-
+Screen open_scrgame(bool *paused, Server *server) {
+  if (server->pid == 0) {
     return SCR_MENU;
+  }
+
+  if (server->port == 0) {
+    get_server(server);
   }
 
   int socfd;
@@ -57,22 +59,29 @@ Screen open_scrgame(bool *paused, pid_t srv_pid) {
     return SCR_MENU;
   }
 
-  Screen screen = SCR_GAME;
-  *paused = false;
-
-  DispthreadArgs thread_args;
-  thread_args.client_pid = getpid();
-  thread_args.srv_pid = srv_pid;
-  pthread_t dispthread;
-  pthread_create(&dispthread, NULL, &start_dispthread, &thread_args);
-
   struct sockaddr_in server_addr;
-  get_server_addr(server.port, &server_addr);
+  get_server_addr(server->port, &server_addr);
 
   Message message;
   message.pid = getpid();
-  message.instruction = IST_CONNECT;
-  send_message(socfd, &server_addr, &message);
+  if (*paused) {
+    *paused = false;
+    message.instruction = IST_PAUSE;
+    send_message(socfd, &server_addr, &message);
+  }
+  else {
+    message.instruction = IST_CONNECT;
+    send_message(socfd, &server_addr, &message);
+  }
+
+  Screen screen = SCR_GAME;
+
+  DispthreadArgs thread_args;
+  thread_args.client_pid = getpid();
+  thread_args.server = server;
+  thread_args.paused = paused;
+  pthread_t dispthread;
+  pthread_create(&dispthread, NULL, &start_dispthread, &thread_args);
 
 	char c;
   while (screen == SCR_GAME) {
@@ -109,6 +118,8 @@ Screen open_scrgame(bool *paused, pid_t srv_pid) {
       case 'q': case 'Q':
         message.instruction = IST_QUIT;
         send_message(socfd, &server_addr, &message);
+        server->pid = 0;
+        server->port = 0;
         screen = SCR_MENU;
         break;
       

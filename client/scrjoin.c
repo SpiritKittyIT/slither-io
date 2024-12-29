@@ -6,6 +6,7 @@
 #include "screen.h"
 #include "../utils/srvlist.h"
 #include "winedit.h"
+#include "../utils/srvlist.h"
 
 static void display_scrjoin(int selected, ServerList *srvlist) {
   clear_screen();
@@ -28,7 +29,7 @@ static void display_scrjoin(int selected, ServerList *srvlist) {
   }
 }
 
-Screen open_scrjoin(bool *paused, pid_t *srv_pid) {
+Screen open_scrjoin(bool *paused, Server *server) {
   ServerList *srvlist = calloc(1, sizeof(ServerList));
   if (!srvlist) {
     return SCR_MENU;
@@ -68,7 +69,7 @@ Screen open_scrjoin(bool *paused, pid_t *srv_pid) {
             break;
           default:
             *paused = false;
-            *srv_pid = srvlist->servers[selected - 1].pid;
+            *server = srvlist->servers[selected - 1];
             screen = SCR_GAME;
             break;
         }
@@ -78,6 +79,8 @@ Screen open_scrjoin(bool *paused, pid_t *srv_pid) {
         break;
     }
   }
+  
+  free(srvlist);
 
 	return screen;
 }
